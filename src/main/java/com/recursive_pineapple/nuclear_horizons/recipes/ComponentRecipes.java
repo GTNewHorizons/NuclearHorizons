@@ -79,7 +79,7 @@ public class ComponentRecipes {
                 GTUtility.getIntegratedCircuit(21),
                 Materials.Aluminium.getPlates(2),
                 gregtech.api.enums.ItemList.Electric_Motor_LV.get(1L),
-                GTModHandler.getModItem("dreamcraft", "item.SteelBars", 2))
+                GTModHandler.getModItem("dreamcraft", "SteelBars", 2))
             .fluidInputs()
             .itemOutputs(NHItemList.BASIC_HEAT_VENT.get(1))
             .duration(10 * SECONDS)
@@ -103,7 +103,7 @@ public class ComponentRecipes {
                 GTUtility.getIntegratedCircuit(21),
                 Ic2Items.industrialDiamond,
                 NHItemList.BASIC_HEAT_VENT.get(1),
-                GTModHandler.getModItem("dreamcraft", "item.StainlessSteelBars", 4))
+                GTModHandler.getModItem("dreamcraft", "StainlessSteelBars", 4))
             .fluidInputs()
             .itemOutputs(NHItemList.ADVANCED_HEAT_VENT.get(1))
             .duration(15 * SECONDS)
@@ -114,7 +114,7 @@ public class ComponentRecipes {
             .itemInputs(
                 GTUtility.getIntegratedCircuit(21),
                 GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Tin, 2),
-                GTModHandler.getModItem("dreamcraft", "item.StainlessSteelBars", 4),
+                GTModHandler.getModItem("dreamcraft", "StainlessSteelBars", 4),
                 NHItemList.BASIC_HEAT_VENT.get(1))
             .fluidInputs()
             .itemOutputs(NHItemList.COMPONENT_HEAT_VENT.get(1))
