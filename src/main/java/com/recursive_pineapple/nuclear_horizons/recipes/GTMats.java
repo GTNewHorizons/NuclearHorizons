@@ -561,7 +561,7 @@ public class GTMats {
     public static final MaterialWrapper UVAROVITE = MaterialWrapper.of(() -> Materials.Uvarovite);
     public static final MaterialWrapper VANADIUMGALLIUM = MaterialWrapper.of(() -> Materials.VanadiumGallium);
     public static final MaterialWrapper WOOD = MaterialWrapper.of(() -> Materials.Wood);
-    public static final MaterialWrapper WROUGHTIRON = MaterialWrapper.of(() -> Materials.WroughtIron);
+    public static final MaterialWrapper WROUGHTIRON = MaterialWrapper.of(() -> Materials.CastIron);
     public static final MaterialWrapper WULFENITE = MaterialWrapper.of(() -> Materials.Wulfenite);
     public static final MaterialWrapper YELLOWLIMONITE = MaterialWrapper.of(() -> Materials.YellowLimonite);
     public static final MaterialWrapper YTTRIUMBARIUMCUPRATE = MaterialWrapper.of(() -> Materials.YttriumBariumCuprate);
@@ -1000,7 +1000,7 @@ public class GTMats {
     public static final MaterialWrapper RHFILTERCAKE = MaterialWrapper.of(() -> WerkstoffLoader.RhFilterCake);
     public static final MaterialWrapper RHFILTERCAKESOLUTION = MaterialWrapper.of(() -> WerkstoffLoader.RHFilterCakeSolution);
     public static final MaterialWrapper RERH = MaterialWrapper.of(() -> WerkstoffLoader.ReRh);
-    public static final MaterialWrapper LUVTIERMATERIAL = MaterialWrapper.of(() -> WerkstoffLoader.LuVTierMaterial);
+    public static final MaterialWrapper LUVTIERMATERIAL = MaterialWrapper.of(() -> WerkstoffLoader.RhodiumPlatedPalladium);
     public static final MaterialWrapper TIBERIUM = MaterialWrapper.of(() -> WerkstoffLoader.Tiberium);
     public static final MaterialWrapper RURIDIT = MaterialWrapper.of(() -> WerkstoffLoader.Ruridit);
     public static final MaterialWrapper FLUORSPAR = MaterialWrapper.of(() -> WerkstoffLoader.Fluorspar);
@@ -1212,7 +1212,6 @@ public class GTMats {
     public static final MaterialWrapper THORIUMHYDROXIDE = MaterialWrapper.of(() -> GGMaterial.thoriumHydroxide);
     public static final MaterialWrapper SODIUMOXALATE = MaterialWrapper.of(() -> GGMaterial.sodiumOxalate);
     public static final MaterialWrapper THORIUMTETRACHLORIDE = MaterialWrapper.of(() -> GGMaterial.thoriumTetrachloride);
-    public static final MaterialWrapper THORIUMTETRAFLUORIDE = MaterialWrapper.of(() -> GGMaterial.thoriumTetrafluoride);
     public static final MaterialWrapper THORIUM232TETRAFLUORIDE = MaterialWrapper.of(() -> GGMaterial.thorium232Tetrafluoride);
     public static final MaterialWrapper ORUNDUM = MaterialWrapper.of(() -> GGMaterial.orundum);
     public static final MaterialWrapper ATOMICSEPARATIONCATALYST = MaterialWrapper.of(() -> GGMaterial.atomicSeparationCatalyst);
@@ -1394,15 +1393,11 @@ public class GTMats {
     public static final MaterialWrapper SELENIUM_DIOXIDE = MaterialWrapper.of(() -> MaterialMisc.SELENIUM_DIOXIDE);
     public static final MaterialWrapper SELENIOUS_ACID = MaterialWrapper.of(() -> MaterialMisc.SELENIOUS_ACID);
     public static final MaterialWrapper HYDROGEN_CYANIDE = MaterialWrapper.of(() -> MaterialMisc.HYDROGEN_CYANIDE);
-    public static final MaterialWrapper CARBON_MONOXIDE = MaterialWrapper.of(() -> MaterialMisc.CARBON_MONOXIDE);
-    public static final MaterialWrapper CARBON_DIOXIDE = MaterialWrapper.of(() -> MaterialMisc.CARBON_DIOXIDE);
     public static final MaterialWrapper WOODS_GLASS = MaterialWrapper.of(() -> MaterialMisc.WOODS_GLASS);
     public static final MaterialWrapper RARE_EARTH_LOW = MaterialWrapper.of(() -> MaterialMisc.RARE_EARTH_LOW);
     public static final MaterialWrapper RARE_EARTH_MID = MaterialWrapper.of(() -> MaterialMisc.RARE_EARTH_MID);
     public static final MaterialWrapper RARE_EARTH_HIGH = MaterialWrapper.of(() -> MaterialMisc.RARE_EARTH_HIGH);
     public static final MaterialWrapper WATER = MaterialWrapper.of(() -> MaterialMisc.WATER);
-    public static final MaterialWrapper HYDROXIDE = MaterialWrapper.of(() -> MaterialMisc.HYDROXIDE);
-    public static final MaterialWrapper HYDROGEN_CHLORIDE = MaterialWrapper.of(() -> MaterialMisc.HYDROGEN_CHLORIDE);
     public static final MaterialWrapper HYDROGEN_CHLORIDE_MIX = MaterialWrapper.of(() -> MaterialMisc.HYDROGEN_CHLORIDE_MIX);
     public static final MaterialWrapper SODIUM_CHLORIDE = MaterialWrapper.of(() -> MaterialMisc.SODIUM_CHLORIDE);
     public static final MaterialWrapper SALT_WATER = MaterialWrapper.of(() -> MaterialMisc.SALT_WATER);
