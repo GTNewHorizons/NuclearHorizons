@@ -561,7 +561,7 @@ public class GTMats {
     public static final MaterialWrapper UVAROVITE = MaterialWrapper.of(() -> Materials.Uvarovite);
     public static final MaterialWrapper VANADIUMGALLIUM = MaterialWrapper.of(() -> Materials.VanadiumGallium);
     public static final MaterialWrapper WOOD = MaterialWrapper.of(() -> Materials.Wood);
-    public static final MaterialWrapper WROUGHTIRON = MaterialWrapper.of(() -> Materials.WroughtIron);
+    public static final MaterialWrapper WROUGHTIRON = MaterialWrapper.of(() -> Materials.CastIron);
     public static final MaterialWrapper WULFENITE = MaterialWrapper.of(() -> Materials.Wulfenite);
     public static final MaterialWrapper YELLOWLIMONITE = MaterialWrapper.of(() -> Materials.YellowLimonite);
     public static final MaterialWrapper YTTRIUMBARIUMCUPRATE = MaterialWrapper.of(() -> Materials.YttriumBariumCuprate);
@@ -1212,7 +1212,6 @@ public class GTMats {
     public static final MaterialWrapper THORIUMHYDROXIDE = MaterialWrapper.of(() -> GGMaterial.thoriumHydroxide);
     public static final MaterialWrapper SODIUMOXALATE = MaterialWrapper.of(() -> GGMaterial.sodiumOxalate);
     public static final MaterialWrapper THORIUMTETRACHLORIDE = MaterialWrapper.of(() -> GGMaterial.thoriumTetrachloride);
-    public static final MaterialWrapper THORIUMTETRAFLUORIDE = MaterialWrapper.of(() -> GGMaterial.thoriumTetrafluoride);
     public static final MaterialWrapper THORIUM232TETRAFLUORIDE = MaterialWrapper.of(() -> GGMaterial.thorium232Tetrafluoride);
     public static final MaterialWrapper ORUNDUM = MaterialWrapper.of(() -> GGMaterial.orundum);
     public static final MaterialWrapper ATOMICSEPARATIONCATALYST = MaterialWrapper.of(() -> GGMaterial.atomicSeparationCatalyst);
