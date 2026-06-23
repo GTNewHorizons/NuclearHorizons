@@ -49,8 +49,10 @@ public class Simulator {
     }
 
     public void cancel() {
-        simulation.cancel(true);
-        simulation = null;
+        if (simulation != null) {
+            simulation.cancel(true);
+            simulation = null;
+        }
     }
 
     private SimulationResult runSimulation(SimulationConfig config) {
