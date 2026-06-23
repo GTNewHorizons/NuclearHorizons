@@ -142,7 +142,6 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         syncManager.registerSlotGroup(slotGroup);
         InvWrapper inv = new InvWrapper(this);
 
-        // build a ROW_COUNT-tall grid of `cols` columns; slot index runs row-major to match this IInventory
         char[] rowChars = new char[cols];
         Arrays.fill(rowChars, 'I');
         String[] matrix = new String[ROW_COUNT];

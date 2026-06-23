@@ -17,10 +17,12 @@ import net.minecraft.tileentity.TileEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.cleanroommc.modularui.api.GuiAxis;
 import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.drawable.ColorType;
+import com.cleanroommc.modularui.drawable.TabTexture;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.network.NetworkUtils;
@@ -170,6 +172,9 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
     private static final UITexture TAB_ICON_SETTINGS = UITexture
         .fullImage("nuclear_horizons", "blocks/access_hatch.png");
 
+    private static final TabTexture TAB_TOP = TabTexture
+        .of(UITexture.fullImage("nuclear_horizons", "gui/tabs_top", ColorType.DEFAULT), GuiAxis.Y, false, 28, 32, 4);
+
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings settings) {
         StringSyncValue codeSync = new StringSyncValue(() -> this.configCode, this::setConfigCode).allowC2S();
@@ -184,20 +189,23 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                 .coverChildren()
                 .pos(5, -28)
                 .child(
-                    new PageButton(0, controller).tab(GuiTextures.TAB_TOP, -1)
+                    new PageButton(0, controller).tab(TAB_TOP, -1)
                         .overlay(
                             TAB_ICON_GRID.asIcon()
-                                .size(16)))
+                                .size(16))
+                        .addTooltipLine(IKey.lang("nh_gui.sim.title")))
                 .child(
-                    new PageButton(1, controller).tab(GuiTextures.TAB_TOP, 0)
+                    new PageButton(1, controller).tab(TAB_TOP, 0)
                         .overlay(
                             TAB_ICON_RESULTS.asIcon()
-                                .size(16)))
+                                .size(16))
+                        .addTooltipLine(IKey.lang("nh_gui.sim.results.title")))
                 .child(
-                    new PageButton(2, controller).tab(GuiTextures.TAB_TOP, 1)
+                    new PageButton(2, controller).tab(TAB_TOP, 1)
                         .overlay(
                             TAB_ICON_SETTINGS.asIcon()
-                                .size(16))));
+                                .size(16))
+                        .addTooltipLine(IKey.lang("nh_gui.sim.settings.title"))));
 
         panel.child(
             new PagedWidget<>().controller(controller)
@@ -255,7 +263,8 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                                     simulator.cancel();
                                 }
                                 return true;
-                            })));
+                            })))
+            .child(SlotGroupWidget.playerInventory(false));
     }
 
     private static void addResultLine(ArrayList<String> lines, String name, String unit, Object value) {
