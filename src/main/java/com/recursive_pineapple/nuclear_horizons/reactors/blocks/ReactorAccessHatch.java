@@ -8,7 +8,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-import com.gtnewhorizons.modularui.api.UIInfos;
+import com.cleanroommc.modularui.factory.GuiFactories;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileAccessHatch;
 
 import gregtech.api.interfaces.IDebugableBlock;
@@ -34,15 +34,12 @@ public class ReactorAccessHatch extends BlockContainer implements IDebugableBloc
 
         if (!worldIn.isRemote) {
             if (reactor != null) {
-                UIInfos.TILE_MODULAR_UI.open(player, worldIn, reactor.xCoord, reactor.yCoord, reactor.zCoord);
+                GuiFactories.tileEntity()
+                    .open(player, reactor.xCoord, reactor.yCoord, reactor.zCoord);
             }
         }
 
-        if (reactor != null) {
-            return true;
-        } else {
-            return false;
-        }
+        return reactor != null;
     }
 
     @Override

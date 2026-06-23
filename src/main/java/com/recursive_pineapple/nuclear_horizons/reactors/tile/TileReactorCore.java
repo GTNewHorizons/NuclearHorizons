@@ -11,7 +11,6 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -31,6 +30,25 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.IFluidBlock;
 
+import com.cleanroommc.modularui.api.IGuiHolder;
+import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.UITexture;
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.utils.item.InvWrapper;
+import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
+import com.cleanroommc.modularui.value.sync.FluidSlotSyncHandler;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.cleanroommc.modularui.value.sync.SyncHandlers;
+import com.cleanroommc.modularui.widgets.SlotGroupWidget;
+import com.cleanroommc.modularui.widgets.TextWidget;
+import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.cleanroommc.modularui.widgets.slot.FluidSlot;
+import com.cleanroommc.modularui.widgets.slot.ItemSlot;
+import com.cleanroommc.modularui.widgets.slot.SlotGroup;
 import com.gtnewhorizon.structurelib.alignment.constructable.ChannelDataAccessor;
 import com.gtnewhorizon.structurelib.alignment.constructable.IConstructable;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
@@ -39,23 +57,6 @@ import com.gtnewhorizon.structurelib.structure.AutoPlaceEnvironment;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
-import com.gtnewhorizons.modularui.api.ModularUITextures;
-import com.gtnewhorizons.modularui.api.drawable.AdaptableUITexture;
-import com.gtnewhorizons.modularui.api.forge.InvWrapper;
-import com.gtnewhorizons.modularui.api.math.CrossAxisAlignment;
-import com.gtnewhorizons.modularui.api.math.MainAxisAlignment;
-import com.gtnewhorizons.modularui.api.math.Size;
-import com.gtnewhorizons.modularui.api.screen.ITileWithModularUI;
-import com.gtnewhorizons.modularui.api.screen.ModularWindow;
-import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
-import com.gtnewhorizons.modularui.api.widget.Widget;
-import com.gtnewhorizons.modularui.common.widget.Column;
-import com.gtnewhorizons.modularui.common.widget.FakeSyncWidget;
-import com.gtnewhorizons.modularui.common.widget.FluidSlotWidget;
-import com.gtnewhorizons.modularui.common.widget.MultiChildWidget;
-import com.gtnewhorizons.modularui.common.widget.Row;
-import com.gtnewhorizons.modularui.common.widget.SlotGroup;
-import com.gtnewhorizons.modularui.common.widget.TextWidget;
 import com.recursive_pineapple.nuclear_horizons.Config;
 import com.recursive_pineapple.nuclear_horizons.reactors.blocks.BlockList;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.ComponentRegistry;
@@ -76,7 +77,7 @@ import gregtech.api.util.GTStructureUtility;
 import gregtech.api.util.GTUtility;
 import ic2.api.energy.tile.IEnergySink;
 
-public class TileReactorCore extends TileEntity implements IInventory, IReactorGrid, ITileWithModularUI,
+public class TileReactorCore extends TileEntity implements IInventory, IReactorGrid, IGuiHolder<PosGuiData>,
     IEnergyConnected, IDebugableTileEntity, IConstructable, ISurvivalConstructable {
 
     public static final int ROW_COUNT = 6;
@@ -121,72 +122,94 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     // #region UI
 
-    private static Widget padding(int width, int height) {
-        return new TextWidget().setSize(width, height);
-    }
-
-    private static final AdaptableUITexture MISSING_CHAMBER = AdaptableUITexture
-        .of("nuclear_horizons:textures/gui/reactor_missing_chamber.png", 18, 108, 0);
+    private static final UITexture MISSING_CHAMBER = UITexture
+        .fullImage("nuclear_horizons", "gui/reactor_missing_chamber");
 
     @Override
-    public ModularWindow createWindow(UIBuildContext buildContext) {
-        ModularWindow.Builder builder = ModularWindow.builder(new Size(212, 234));
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings settings) {
+        final int cols = getColumnCount();
 
-        builder.setBackground(ModularUITextures.VANILLA_BACKGROUND)
-            .bindPlayerInventory(buildContext.getPlayer());
+        IntSyncValue storedHeatSync = new IntSyncValue(() -> this.storedHeat);
+        IntSyncValue addedEUSync = new IntSyncValue(() -> this.addedEU);
+        IntSyncValue addedHeatSync = new IntSyncValue(() -> this.addedHeat);
+        BooleanSyncValue isFluidSync = new BooleanSyncValue(() -> this.isFluid);
+        syncManager.syncValue("storedHeat", storedHeatSync);
+        syncManager.syncValue("addedEU", addedEUSync);
+        syncManager.syncValue("addedHeat", addedHeatSync);
+        syncManager.syncValue("isFluid", isFluidSync);
 
-        // spotless:off
-        builder.widgets(
-            new Column().setAlignment(CrossAxisAlignment.CENTER).widgets(
-                padding(7, 7),
-                new TextWidget(I18n.format("nh_gui.reactor.title")).setSize(150, 16),
-                new Row().setAlignment(MainAxisAlignment.CENTER, CrossAxisAlignment.CENTER).widgets(
-                    new FluidSlotWidget(coolantTank).setEnabled(w -> isFluid),
-                    padding(2, 0),
-                    SlotGroup.ofItemHandler(new InvWrapper(this), getColumnCount()).build(),
-                    new Row().setAlignment(MainAxisAlignment.START, CrossAxisAlignment.CENTER)
-                        .consume(w -> {
-                            for (int i = getColumnCount(); i < COL_COUNT; i++) {
-                                ((Row) w).widget(
-                                    MISSING_CHAMBER.withFixedSize(18, 108)
-                                        .asWidget()
-                                        .setSize(18, 108));
-                            }
-                        }),
-                    padding(2, 0),
-                    new FluidSlotWidget(hotCoolantTank).setEnabled(w -> isFluid)
-                ),
-                new MultiChildWidget()
-                    .addChild(new Row().setAlignment(MainAxisAlignment.START).widgets(
-                        padding(7 + 16, 16),
-                        new TextWidget(I18n.format("nh_gui.reactor.player_inv")).setSize(50, 16)
-                    ))
-                    .addChild(new Row().setAlignment(MainAxisAlignment.END).widgets(
-                            TextWidget
-                                .dynamicString(() -> I18n.format("nh_gui.reactor.stored_hu", this.storedHeat))
-                                .setSize(45, 16),
-                            TextWidget
-                                .dynamicString(() -> (
-                                    isFluid ?
-                                        I18n.format("nh_gui.reactor.hu_output", this.addedHeat) :
-                                        I18n.format("nh_gui.reactor.eu_output", this.addedEU / 20)
-                                ))
-                                .setSize(65, 16),
-                            padding(7 + 16, 16)
-                    ))
-            )
-        );
-        // spotless:on
+        SlotGroup slotGroup = new SlotGroup("reactor_grid", cols);
+        syncManager.registerSlotGroup(slotGroup);
+        InvWrapper inv = new InvWrapper(this);
 
-        builder.widgets(
-            new FakeSyncWidget.BooleanSyncer(() -> this.isActive, v -> this.isActive = v),
-            new FakeSyncWidget.IntegerSyncer(() -> this.storedHeat, v -> this.storedHeat = v),
-            new FakeSyncWidget.IntegerSyncer(() -> this.addedEU, v -> this.addedEU = v),
-            new FakeSyncWidget.BooleanSyncer(() -> this.isFluid, v -> this.isFluid = v),
-            new FakeSyncWidget.FluidStackSyncer(this.coolantTank::getFluid, this.coolantTank::setFluid),
-            new FakeSyncWidget.FluidStackSyncer(this.hotCoolantTank::getFluid, this.hotCoolantTank::setFluid));
+        // build a ROW_COUNT-tall grid of `cols` columns; slot index runs row-major to match this IInventory
+        char[] rowChars = new char[cols];
+        Arrays.fill(rowChars, 'I');
+        String[] matrix = new String[ROW_COUNT];
+        Arrays.fill(matrix, new String(rowChars));
 
-        return builder.build();
+        Flow reactorRow = Flow.row()
+            .coverChildren()
+            .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+            .childPadding(2);
+
+        Flow gridRow = Flow.row()
+            .coverChildren()
+            .crossAxisAlignment(Alignment.CrossAxis.CENTER);
+
+        gridRow.child(
+            SlotGroupWidget.builder()
+                .matrix(matrix)
+                .key(
+                    'I',
+                    index -> new ItemSlot().slot(
+                        SyncHandlers.itemSlot(inv, index)
+                            .slotGroup(slotGroup)))
+                .build());
+
+        for (int i = cols; i < COL_COUNT; i++) {
+            gridRow.child(
+                MISSING_CHAMBER.asWidget()
+                    .size(18, 108));
+        }
+
+        if (this.isFluid) {
+            reactorRow.child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.coolantTank)));
+        }
+        reactorRow.child(gridRow);
+
+        if (this.isFluid) {
+            reactorRow.child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.hotCoolantTank)));
+        }
+
+        ModularPanel panel = ModularPanel.defaultPanel("reactor_core", 212, 234);
+        panel.bindPlayerInventory();
+        panel.child(
+            Flow.column()
+                .pos(0, 5)
+                .size(212, 130)
+                .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+                .childPadding(4)
+                .child(new TextWidget<>(IKey.lang("nh_gui.reactor.title")))
+                .child(reactorRow)
+                .child(
+                    Flow.row()
+                        .coverChildren()
+                        .childPadding(8)
+                        .child(
+                            new TextWidget<>(
+                                IKey.lang(
+                                    "nh_gui.reactor.stored_hu",
+                                    () -> new Object[] { storedHeatSync.getValue() })))
+                        .child(
+                            new TextWidget<>(
+                                IKey.lang(
+                                    () -> isFluidSync.getValue() ? "nh_gui.reactor.hu_output"
+                                        : "nh_gui.reactor.eu_output",
+                                    () -> new Object[] { isFluidSync.getValue() ? addedHeatSync.getValue()
+                                        : addedEUSync.getValue() / 20 })))));
+
+        return panel;
     }
 
     // #endregion

@@ -10,7 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.gtnewhorizons.modularui.api.drawable.UITexture;
+import com.cleanroommc.modularui.drawable.UITexture;
 import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
 import com.recursive_pineapple.nuclear_horizons.reactors.blocks.BlockList;
 
@@ -45,7 +45,7 @@ public class CoolantRegistry {
 
     public static final RecipeMap<RecipeMapBackend> reactorCoolant = RecipeMapBuilder.of("nh.recipe.coolant")
         .maxIO(0, 0, 1, 1)
-        .progressBar(REACTOR_PROGRESS)
+        .progressBarMUI2(REACTOR_PROGRESS)
         .neiHandlerInfo(builder -> builder.setDisplayStack(new ItemStack(BlockList.REACTOR_CHAMBER)))
         .neiRecipeComparator(
             Comparator

@@ -17,8 +17,8 @@ import net.minecraft.util.EnumChatFormatting;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.cleanroommc.modularui.utils.item.IItemHandlerModifiable;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.gtnewhorizons.modularui.api.forge.IItemHandlerModifiable;
 import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.ComponentRegistry;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;

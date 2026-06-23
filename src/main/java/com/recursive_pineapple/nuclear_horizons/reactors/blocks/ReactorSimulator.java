@@ -6,7 +6,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-import com.gtnewhorizons.modularui.api.UIInfos;
+import com.cleanroommc.modularui.factory.GuiFactories;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorSimulator;
 
 public class ReactorSimulator extends BlockContainer {
@@ -27,7 +27,8 @@ public class ReactorSimulator extends BlockContainer {
     public boolean onBlockActivated(World worldIn, int x, int y, int z, EntityPlayer player, int side, float subX,
         float subY, float subZ) {
         if (!worldIn.isRemote) {
-            UIInfos.TILE_MODULAR_UI.open(player, worldIn, x, y, z);
+            GuiFactories.tileEntity()
+                .open(player, x, y, z);
         }
 
         return true;
