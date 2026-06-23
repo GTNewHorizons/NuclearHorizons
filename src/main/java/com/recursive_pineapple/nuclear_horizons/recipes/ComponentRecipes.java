@@ -9,6 +9,7 @@ import com.recursive_pineapple.nuclear_horizons.reactors.blocks.BlockList;
 import com.recursive_pineapple.nuclear_horizons.reactors.items.NHItemList;
 
 import gregtech.api.enums.GTValues;
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.TierEU;
@@ -78,7 +79,7 @@ public class ComponentRecipes {
             .itemInputs(
                 GTUtility.getIntegratedCircuit(21),
                 Materials.Aluminium.getPlates(2),
-                gregtech.api.enums.ItemList.Electric_Motor_LV.get(1L),
+                ItemList.Electric_Motor_LV.get(1L),
                 GTModHandler.getModItem("dreamcraft", "SteelBars", 2))
             .fluidInputs()
             .itemOutputs(NHItemList.BASIC_HEAT_VENT.get(1))
@@ -199,7 +200,7 @@ public class ComponentRecipes {
             .addTo(assemblerRecipes);
 
         GTValues.RA.stdBuilder()
-            .itemInputs(new ItemStack(Ic2Items.reinforcedStone.getItem(), 1), Materials.Lead.getPlates(2))
+            .itemInputs(ItemList.Block_ReinforcedConcrete.get(1L), Materials.Lead.getPlates(2))
             .fluidInputs()
             .itemOutputs(new ItemStack(BlockList.PRESSURE_VESSEL, 1))
             .duration(10 * SECONDS)
@@ -207,9 +208,7 @@ public class ComponentRecipes {
             .addTo(assemblerRecipes);
 
         GTValues.RA.stdBuilder()
-            .itemInputs(
-                new ItemStack(BlockList.PRESSURE_VESSEL, 1),
-                gregtech.api.enums.ItemList.Electric_Pump_HV.get(1L))
+            .itemInputs(new ItemStack(BlockList.PRESSURE_VESSEL, 1), ItemList.Electric_Pump_HV.get(1L))
             .fluidInputs()
             .itemOutputs(new ItemStack(BlockList.REACTOR_FLUID_PORT, 1))
             .duration(20 * SECONDS)
@@ -217,9 +216,7 @@ public class ComponentRecipes {
             .addTo(assemblerRecipes);
 
         GTValues.RA.stdBuilder()
-            .itemInputs(
-                new ItemStack(BlockList.PRESSURE_VESSEL, 1),
-                gregtech.api.enums.ItemList.Conveyor_Module_HV.get(1L))
+            .itemInputs(new ItemStack(BlockList.PRESSURE_VESSEL, 1), ItemList.Conveyor_Module_HV.get(1L))
             .fluidInputs()
             .itemOutputs(new ItemStack(BlockList.REACTOR_ACCESS_HATCH, 1))
             .duration(20 * SECONDS)
@@ -227,9 +224,7 @@ public class ComponentRecipes {
             .addTo(assemblerRecipes);
 
         GTValues.RA.stdBuilder()
-            .itemInputs(
-                new ItemStack(BlockList.PRESSURE_VESSEL, 1),
-                gregtech.api.enums.ItemList.Cover_ActivityDetector.get(1L))
+            .itemInputs(new ItemStack(BlockList.PRESSURE_VESSEL, 1), ItemList.Cover_ActivityDetector.get(1L))
             .fluidInputs()
             .itemOutputs(new ItemStack(BlockList.REACTOR_REDSTONE_PORT, 1))
             .duration(20 * SECONDS)
@@ -239,11 +234,11 @@ public class ComponentRecipes {
         // based on nuclear control thermal monitor recipe (the non-wireless one)
         GTValues.RA.stdBuilder()
             .itemInputs(
-                new ItemStack(Ic2Items.reinforcedGlass.getItem(), 3),
+                ItemList.ReinforcedGlass.get(3L),
                 GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Lead, 2),
-                gregtech.api.enums.ItemList.Cover_ActivityDetector.get(1L),
+                ItemList.Cover_ActivityDetector.get(1L),
                 GTOreDictUnificator.get(OrePrefixes.circuit, Materials.HV, 2L),
-                gregtech.api.enums.ItemList.Cover_Screen.get(1L))
+                ItemList.Cover_Screen.get(1L))
             .fluidInputs()
             .itemOutputs(new ItemStack(BlockList.REACTOR_THERMAL_SENSOR, 1))
             .duration(20 * SECONDS)
