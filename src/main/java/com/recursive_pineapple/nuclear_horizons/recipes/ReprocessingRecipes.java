@@ -53,7 +53,7 @@ import net.minecraftforge.fluids.FluidStack;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.TierEU;
 import gregtech.api.interfaces.ISubTagContainer;
-import gtPlusPlus.core.item.ModItems;
+import gtPlusPlus.xmod.gregtech.api.enums.GregtechItemList;
 
 public class ReprocessingRecipes {
 
@@ -135,7 +135,7 @@ public class ReprocessingRecipes {
                 DEPLETED_THORIUM_FUEL_SOLUTION.getFluid(8000),
                 TRIBUTYL_PHOSPHATE.getFluid(8000),
                 KEROSENE.getFluid(8000))
-            .itemOutputs(THORIUM_FISSION_PRODUCT_MIXTURE.getDust(1), new ItemStack(ModItems.dustProtactinium233, 1))
+            .itemOutputs(THORIUM_FISSION_PRODUCT_MIXTURE.getDust(1), GregtechItemList.Protactinium233Dust.get(1))
             .fluidOutputs(URANIUM233_SOLUTION_ORG_PHASE.getFluid(11000), TH_SOLUTION_AQ_PHASE.getFluid(13000))
             .duration(60 * SECONDS)
             .eut(TierEU.RECIPE_HV)
