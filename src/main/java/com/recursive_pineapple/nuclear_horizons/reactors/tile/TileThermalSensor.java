@@ -1,7 +1,5 @@
 package com.recursive_pineapple.nuclear_horizons.reactors.tile;
 
-import java.util.Arrays;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -10,19 +8,20 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 
-import com.gtnewhorizons.modularui.api.ModularUITextures;
-import com.gtnewhorizons.modularui.api.drawable.AdaptableUITexture;
-import com.gtnewhorizons.modularui.api.math.Color;
-import com.gtnewhorizons.modularui.api.math.Size;
-import com.gtnewhorizons.modularui.api.screen.ITileWithModularUI;
-import com.gtnewhorizons.modularui.api.screen.ModularWindow;
-import com.gtnewhorizons.modularui.api.screen.UIBuildContext;
-import com.gtnewhorizons.modularui.common.widget.TextWidget;
-import com.gtnewhorizons.modularui.common.widget.VanillaButtonWidget;
-import com.gtnewhorizons.modularui.common.widget.textfield.NumericWidget;
+import com.cleanroommc.modularui.api.IGuiHolder;
+import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.EnumSyncValue;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.cleanroommc.modularui.widgets.CycleButtonWidget;
+import com.cleanroommc.modularui.widgets.TextWidget;
+import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid;
 
-public class TileThermalSensor extends TileEntity implements ITileWithModularUI, IReactorBlock {
+public class TileThermalSensor extends TileEntity implements IGuiHolder<PosGuiData>, IReactorBlock {
 
     public int reactorRelX, reactorRelY, reactorRelZ;
 
@@ -32,7 +31,7 @@ public class TileThermalSensor extends TileEntity implements ITileWithModularUI,
 
     private Boolean wasActive = null;
 
-    private static enum ThermalSensorOp {
+    private enum ThermalSensorOp {
 
         LT,
         LTE,
@@ -45,6 +44,15 @@ public class TileThermalSensor extends TileEntity implements ITileWithModularUI,
                 case LTE -> "<=";
                 case GT -> ">";
                 case GTE -> ">=";
+            };
+        }
+
+        public String getComparisonPhrase() {
+            return switch (this) {
+                case LT -> "less than";
+                case LTE -> "less than or equal to";
+                case GT -> "greater than";
+                case GTE -> "greater than or equal to";
             };
         }
 
@@ -87,6 +95,18 @@ public class TileThermalSensor extends TileEntity implements ITileWithModularUI,
         if (wasActive == null || shouldBeActive != wasActive) {
             wasActive = shouldBeActive;
             worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, getBlockType());
+        }
+    }
+
+    private void onSettingChanged() {
+        this.markDirty();
+        if (this.worldObj != null) {
+            this.worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+
+            TileReactorCore reactor = getReactor();
+            if (reactor != null) {
+                onHeatTick(reactor);
+            }
         }
     }
 
@@ -149,53 +169,37 @@ public class TileThermalSensor extends TileEntity implements ITileWithModularUI,
         this.op = ThermalSensorOp.valueOf(data.getString("op"));
     }
 
-    private static final AdaptableUITexture DISPLAY = AdaptableUITexture
-        .of("modularui:gui/background/display", 143, 75, 2);
-
     @Override
-    public ModularWindow createWindow(UIBuildContext buildContext) {
-        ModularWindow.Builder builder = ModularWindow.builder(new Size(144, 48));
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings settings) {
+        EnumSyncValue<ThermalSensorOp, ?> opValue = new EnumSyncValue<>(ThermalSensorOp.class, () -> this.op, v -> {
+            this.op = v;
+            onSettingChanged();
+        }).allowC2S();
 
-        builder.setBackground(ModularUITextures.VANILLA_BACKGROUND);
+        IntSyncValue thresholdValue = new IntSyncValue(() -> this.threshold, v -> {
+            this.threshold = v;
+            onSettingChanged();
+        }).allowC2S();
 
-        builder.widgets(
-            new TextWidget("Reactor Thermal Sensor").setPos(8, 8),
-            new VanillaButtonWidget().setDisplayString(this.op.getDisplayString())
-                .setOnClick((t, u) -> {
-                    this.op = ThermalSensorOp.values()[(this.op.ordinal() + 1) % ThermalSensorOp.values().length];
-                    ((VanillaButtonWidget) u).setDisplayString(op.getDisplayString());
-                    u.notifyTooltipChange();
+        CycleButtonWidget opButton = new CycleButtonWidget().value(opValue)
+            .size(24, 16)
+            .pos(8, 24);
 
-                    this.markDirty();
-                    this.worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-                    this.onHeatTick(getReactor());
-                })
-                .dynamicTooltipShift(() -> {
-                    return Arrays.asList(
-                        String
-                            .format("Emit a redstone signal when reactor temperature is %s the threshold", switch (op) {
-                        case LT -> "less than";
-                        case LTE -> "less than or equal to";
-                        case GT -> "greater than";
-                        case GTE -> "greater than or equal to";
-                    }));
-                })
-                .setSize(24, 16)
-                .setPos(8, 24),
-            new NumericWidget().setGetter(() -> this.threshold)
-                .setSetter(v -> {
-                    this.threshold = (int) v;
+        for (ThermalSensorOp value : ThermalSensorOp.values()) {
+            opButton.stateOverlay(value.ordinal(), IKey.str(value.getDisplayString()));
+            opButton.addTooltip(
+                value.ordinal(),
+                "Emit a redstone signal when reactor temperature is " + value.getComparisonPhrase() + " the threshold");
+        }
 
-                    this.markDirty();
-                    this.worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-                    this.onHeatTick(getReactor());
-                })
-                .setBounds(0, Double.MAX_VALUE)
-                .setTextColor(Color.WHITE.dark(1))
-                .setBackground(DISPLAY.withOffset(-2, -2, 4, 4))
-                .setSize(96, 16)
-                .setPos(40, 24));
-
-        return builder.build();
+        return ModularPanel.defaultPanel("thermal_sensor", 144, 48)
+            .child(new TextWidget<>(IKey.lang("tile.reactor_thermal_sensor.name")).pos(8, 8))
+            .child(opButton)
+            .child(
+                new TextFieldWidget().formatAsInteger(true)
+                    .numbersInt(0, Integer.MAX_VALUE)
+                    .value(thresholdValue)
+                    .size(96, 16)
+                    .pos(40, 24));
     }
 }

@@ -15,7 +15,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
-import com.gtnewhorizons.modularui.api.UIInfos;
+import com.cleanroommc.modularui.factory.GuiFactories;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorChamber;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 import com.recursive_pineapple.nuclear_horizons.utils.DirectionUtil;
@@ -99,7 +99,8 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
 
         if (reactor != null) {
             if (!worldIn.isRemote) {
-                UIInfos.TILE_MODULAR_UI.open(player, worldIn, reactor.xCoord, reactor.yCoord, reactor.zCoord);
+                GuiFactories.tileEntity()
+                    .open(player, reactor.xCoord, reactor.yCoord, reactor.zCoord);
             }
 
             return true;
