@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.StatCollector;
 
 import org.lwjgl.input.Keyboard;
 
@@ -63,9 +64,12 @@ public class BasicBreederRodItem extends NHItem implements IBreederRod, ICompone
             .itemOutputs(product.get())
             .setNEIDesc(
                 GTUtility.breakLines(
-                    GTUtility.translate("GT5U.nei.nuclear.breeder.heat_neutral"),
-                    GTUtility.translate("GT5U.nei.nuclear.breeder.reactor_hull_heat", heatDivisor, heatMultiplier),
-                    GTUtility.translate("GT5U.nei.nuclear.breeder.required_pulse", maxNeutrons)))
+                    StatCollector.translateToLocal("GT5U.nei.nuclear.breeder.heat_neutral"),
+                    StatCollector.translateToLocalFormatted(
+                        "GT5U.nei.nuclear.breeder.reactor_hull_heat",
+                        heatDivisor,
+                        heatMultiplier),
+                    StatCollector.translateToLocalFormatted("GT5U.nei.nuclear.breeder.required_pulse", maxNeutrons)))
             .duration(0)
             .eut(0)
             .addTo(RecipeMaps.ic2NuclearFakeRecipes);

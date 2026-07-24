@@ -39,12 +39,12 @@ import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.ZINC;
 import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.ZINC_NITRATE_SOLUTION;
 import static gregtech.api.recipe.RecipeMaps.blastFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.distillationTowerRecipes;
+import static gregtech.api.recipe.RecipeMaps.mixerNonCellRecipes;
 import static gregtech.api.recipe.RecipeMaps.multiblockChemicalReactorRecipes;
 import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
 import static gregtech.api.util.GTRecipeConstants.UniversalChemical;
 import static gregtech.api.util.GTUtility.getIntegratedCircuit;
-import static gtPlusPlus.api.recipe.GTPPRecipeMaps.mixerNonCellRecipes;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidRegistry;
