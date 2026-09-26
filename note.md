@@ -1,1 +1,1 @@
-A format audit found erp= could not represent every NH setting and could silently lose items. The nh= format now keeps the full layout and stack NBT. Code review found invalid imports could replace a valid tile layout and later fail during world save, so imports are validated first. Existing world data retains its old ID 71 meaning.
+the simulator could save reactor and component settings that players could not edit. expose them in the GUI, with a clickable reactor layout for selecting components, a highlight for the selection and markers for enabled heat automation

@@ -184,3 +184,12 @@ nh_gui.sim.comp_settings.active=Active Component: %s
 nh_gui.sim.comp_settings.xy=X=%1$d Y=%2$d (Name=%3$s)
 
 nh.recipe.coolant=Reactor Coolant
+nh_gui.sim.settings.configuration_code=Configuration Code:
+nh_gui.sim.settings.automated=Automated Replacement:
+nh_gui.sim.settings.export_planner=Export to ERP
+nh_gui.sim.comp_settings.marker=Orange marker: heat automation enabled
+nh_gui.sim.comp_settings.empty=Select an occupied slot to edit its settings
+nh_gui.sim.comp_settings.automated=Heat Automation:
+nh_gui.sim.comp_settings.initial_heat=Initial Heat:
+nh_gui.sim.comp_settings.threshold=Heat Threshold:
+nh_gui.sim.comp_settings.pause=Pause (s):

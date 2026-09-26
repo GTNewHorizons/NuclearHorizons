@@ -26,6 +26,10 @@ import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.ColorType;
+import com.cleanroommc.modularui.drawable.DynamicDrawable;
+import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.drawable.ItemDrawable;
+import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.TabTexture;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PosGuiData;
@@ -64,6 +68,9 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     @NotNull
     private String configCode = "";
+    private String configError = "";
+    private String plannerCode = "";
+    private int selectedComponent;
 
     /**
      * Must be final since the slots keep a reference to this specific config.
@@ -146,12 +153,15 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     public void setConfigCode(String code) {
         if (!Objects.equals(code, this.configCode)) {
-            if (worldObj != null && worldObj.isRemote && simulator != null) simulator.cancel();
-            this.configCode = code;
-            this.config.put(SimulationConfig.fromCode(code));
-
-            if (worldObj != null) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
-            markDirty();
+            try {
+                SimulationConfig parsed = SimulationConfig.fromCode(code);
+                this.config.put(parsed);
+                configError = "";
+                onConfigChanged();
+            } catch (IllegalArgumentException e) {
+                configError = e.getMessage();
+                NuclearHorizons.LOG.warn("Rejected reactor configuration: {}", configError);
+            }
         }
     }
 
@@ -161,6 +171,9 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
         if (!Objects.equals(code, configCode)) {
             this.configCode = code;
+            this.latestSimulation = null;
+            this.config.result = null;
+            this.plannerCode = "";
             if (worldObj != null) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
             markDirty();
         }
@@ -205,8 +218,8 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
     public void writeToNBT(NBTTagCompound compound) {
         super.writeToNBT(compound);
 
-        compound.setInteger("version", 1);
-        compound.setString("config", configCode);
+        compound.setInteger("version", 2);
+        compound.setString("config", config.getCode());
     }
 
     @Override
@@ -215,6 +228,16 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
         switch (compound.getInteger("version")) {
             case 1: {
+                try {
+                    config.put(SimulationConfig.fromLegacyCode(compound.getString("config")));
+                    onConfigChanged();
+                } catch (IllegalArgumentException e) {
+                    configError = e.getMessage();
+                    NuclearHorizons.LOG.error("Could not read legacy reactor configuration", e);
+                }
+                break;
+            }
+            case 2: {
                 setConfigCode(compound.getString("config"));
                 break;
             }
@@ -239,7 +262,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
         PagedWidget.Controller controller = new PagedWidget.Controller();
 
-        ModularPanel panel = ModularPanel.defaultPanel("reactor_simulator", 222, 234);
+        ModularPanel panel = ModularPanel.defaultPanel("reactor_simulator", 222, 282);
 
         panel.child(
             Flow.row()
@@ -262,7 +285,13 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                         .overlay(
                             TAB_ICON_SETTINGS.asIcon()
                                 .size(16))
-                        .addTooltipLine(IKey.lang("nh_gui.sim.settings.title"))));
+                        .addTooltipLine(IKey.lang("nh_gui.sim.settings.title")))
+                .child(
+                    new PageButton(3, controller).tab(TAB_TOP, 1)
+                        .overlay(
+                            TAB_ICON_SETTINGS.asIcon()
+                                .size(16))
+                        .addTooltipLine(IKey.lang("nh_gui.sim.comp_settings.title"))));
 
         panel.child(
             new PagedWidget<>().controller(controller)
@@ -270,7 +299,8 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                 .sizeRel(1f)
                 .addPage(gridPage())
                 .addPage(resultsPage())
-                .addPage(settingsPage(codeSync)));
+                .addPage(settingsPage(codeSync))
+                .addPage(componentSettingsPage()));
 
         return panel;
     }
@@ -402,12 +432,14 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
             .crossAxisAlignment(Alignment.CrossAxis.CENTER)
             .childPadding(2)
             .child(new TextWidget<>(IKey.lang("nh_gui.sim.settings.title")))
-            .child(textSetting("nh_gui.sim.settings.planner_code", codeSync))
+            .child(textSetting("nh_gui.sim.settings.configuration_code", codeSync))
+            .child(booleanSetting("nh_gui.sim.settings.automated", () -> config.automated, v -> config.automated = v))
             .child(
                 numericSetting(
                     "nh_gui.sim.settings.max_simulation_ticks",
                     () -> this.config.maxSimulationTicks,
-                    v -> this.config.maxSimulationTicks = v))
+                    v -> this.config.maxSimulationTicks = v,
+                    5_000_000))
             .child(booleanSetting("nh_gui.sim.settings.fluid", () -> this.config.fluid, v -> this.config.fluid = v))
             .child(booleanSetting("nh_gui.sim.settings.pulsed", () -> this.config.pulsed, v -> this.config.pulsed = v))
             .child(
@@ -431,7 +463,132 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                 numericSetting(
                     "nh_gui.sim.settings.initial_reactor_heat",
                     () -> this.config.initialHeat,
-                    v -> this.config.initialHeat = v));
+                    v -> this.config.initialHeat = v))
+            .child(
+                new ButtonWidget<>().size(120, 14)
+                    .overlay(IKey.lang("nh_gui.sim.settings.export_planner"))
+                    .onMousePressed(button -> {
+                        try {
+                            plannerCode = config.getPlannerCode();
+                            configError = "";
+                        } catch (IllegalArgumentException e) {
+                            plannerCode = "";
+                            configError = e.getMessage();
+                        }
+                        return true;
+                    }))
+            .child(
+                textSetting(
+                    "nh_gui.sim.settings.planner_code",
+                    new StringSyncValue(() -> plannerCode, value -> plannerCode = value)))
+            .child(new TextWidget<>(IKey.dynamic(() -> configError)).widthRel(1f));
+    }
+
+    private IWidget componentSettingsPage() {
+        return Flow.column()
+            .sizeRel(1f)
+            .padding(7)
+            .childPadding(3)
+            .crossAxisAlignment(Alignment.CrossAxis.CENTER)
+            .child(new TextWidget<>(IKey.lang("nh_gui.sim.comp_settings.title")))
+            .child(componentSettingsGrid())
+            .child(new TextWidget<>(IKey.lang("nh_gui.sim.comp_settings.marker")).widthRel(1f))
+            .child(new TextWidget<>(IKey.dynamic(() -> {
+                var component = config.components[selectedComponent];
+                return component == null ? I18n.format("nh_gui.sim.comp_settings.empty")
+                    : I18n.format(
+                        "nh_gui.sim.comp_settings.xy",
+                        selectedComponent % COL_COUNT + 1,
+                        selectedComponent / COL_COUNT + 1,
+                        component.stack.getDisplayName());
+            })).widthRel(1f))
+            .child(
+                booleanSetting(
+                    "nh_gui.sim.comp_settings.automated",
+                    () -> config.components[selectedComponent] != null
+                        && config.components[selectedComponent].hasAutomation,
+                    value -> {
+                        if (config.components[selectedComponent] != null)
+                            config.components[selectedComponent].hasAutomation = value;
+                    }))
+            .child(
+                numericSetting(
+                    "nh_gui.sim.comp_settings.initial_heat",
+                    () -> componentValue(component -> component.initialHeat),
+                    value -> {
+                        if (config.components[selectedComponent] != null)
+                            config.components[selectedComponent].initialHeat = value;
+                    }))
+            .child(
+                numericSetting(
+                    "nh_gui.sim.comp_settings.threshold",
+                    () -> componentValue(component -> component.replacementThreshold),
+                    value -> {
+                        if (config.components[selectedComponent] != null)
+                            config.components[selectedComponent].replacementThreshold = value;
+                    }))
+            .child(
+                numericSetting(
+                    "nh_gui.sim.comp_settings.pause",
+                    () -> componentValue(component -> component.reactorPause),
+                    value -> {
+                        if (config.components[selectedComponent] != null)
+                            config.components[selectedComponent].reactorPause = value;
+                    },
+                    10_000));
+    }
+
+    private IWidget componentSettingsGrid() {
+        Flow grid = Flow.column()
+            .coverChildren()
+            .childPadding(0);
+        Rectangle selection = new Rectangle().color(0xFF40A0FF)
+            .hollow(2);
+        Rectangle automation = new Rectangle().color(0xFFFFA030);
+        for (int y = 0; y < ROW_COUNT; y++) {
+            Flow row = Flow.row()
+                .coverChildren()
+                .childPadding(0);
+            for (int x = 0; x < COL_COUNT; x++) {
+                int index = y * COL_COUNT + x;
+                ItemDrawable item = new ItemDrawable();
+                row.child(
+                    new ButtonWidget<>().size(18)
+                        .background(GuiTextures.SLOT_ITEM)
+                        .disableHoverBackground()
+                        .overlay(
+                            new DynamicDrawable(() -> item.setItem(config.getStackInSlot(index))).asIcon()
+                                .size(16),
+                            new DynamicDrawable(() -> selectedComponent == index ? selection : null),
+                            new DynamicDrawable(
+                                () -> config.components[index] != null && config.components[index].hasAutomation
+                                    ? automation
+                                    : null).asIcon()
+                                        .size(4)
+                                        .alignment(Alignment.BottomRight))
+                        .tooltipDynamic(tooltip -> {
+                            var component = config.components[index];
+                            tooltip.addLine(
+                                IKey.lang(
+                                    "nh_gui.sim.comp_settings.xy",
+                                    index % COL_COUNT + 1,
+                                    index / COL_COUNT + 1,
+                                    component == null ? I18n.format("nh_gui.sim.comp_settings.empty")
+                                        : component.stack.getDisplayName()));
+                        })
+                        .onMousePressed(button -> {
+                            selectedComponent = index;
+                            return true;
+                        }));
+            }
+            grid.child(row);
+        }
+        return grid;
+    }
+
+    private int componentValue(java.util.function.ToIntFunction<SimulationConfig.SimComponentConfig> getter) {
+        var component = config.components[selectedComponent];
+        return component == null ? 0 : getter.applyAsInt(component);
     }
 
     private static final int SETTING_LABEL_WIDTH = 108;
@@ -456,10 +613,15 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     private IWidget numericSetting(String labelKey, java.util.function.IntSupplier getter,
         java.util.function.IntConsumer setter) {
+        return numericSetting(labelKey, getter, setter, Integer.MAX_VALUE);
+    }
+
+    private IWidget numericSetting(String labelKey, java.util.function.IntSupplier getter,
+        java.util.function.IntConsumer setter, int maximum) {
         return labeledRow(
             labelKey,
             new TextFieldWidget().formatAsInteger(true)
-                .numbersInt(0, Integer.MAX_VALUE)
+                .numbersInt(0, maximum)
                 .value(new IntValue.Dynamic(getter, v -> {
                     setter.accept(v);
                     onConfigChanged();
