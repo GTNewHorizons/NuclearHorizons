@@ -375,6 +375,9 @@ public class SimulationConfig implements IItemHandlerModifiable {
                 || component.reactorPause > 10_000)) {
                 throw new IllegalArgumentException("Invalid component settings");
             }
+            if (component != null && component.initialHeat > Simulator.maxComponentInitialHeat(component.stack)) {
+                throw new IllegalArgumentException("Initial heat exceeds the component's capacity");
+            }
         }
     }
 

@@ -20,6 +20,21 @@ public interface IComponentAdapter {
         return 0;
     }
 
+    public default int getUsedHeatCapacity() {
+        return getStoredHeat();
+    }
+
+    public default void setUsedHeatCapacity(int usedHeatCapacity) {
+        int rejected = addHeat(usedHeatCapacity - getUsedHeatCapacity());
+        if (rejected != 0) {
+            throw new IllegalArgumentException("Initial heat is outside the component's capacity: " + usedHeatCapacity);
+        }
+    }
+
+    public default boolean canVentHeat() {
+        return containsHeat();
+    }
+
     public default int getMaxHeat() {
         return 0;
     }

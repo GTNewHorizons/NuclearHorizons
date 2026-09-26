@@ -22,6 +22,13 @@ import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
  */
 public class Simulator implements AutoCloseable {
 
+    public static int maxComponentInitialHeat(ItemStack stack) {
+        SimulatedReactor reactor = new SimulatedReactor();
+        reactor.contents[0] = ItemStack.copyItemStack(stack);
+        IComponentAdapter component = reactor.getComponent(0, 0);
+        return component == null ? 0 : component.getMaxHeat();
+    }
+
     private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private Future<SimulationResult> simulation;
 
@@ -281,7 +288,7 @@ public class Simulator implements AutoCloseable {
 
                 var comp = getComponent(i % COL_COUNT, i / COL_COUNT);
                 if (comp != null) {
-                    comp.addHeat(config.components[i].initialHeat - comp.getStoredHeat());
+                    comp.setUsedHeatCapacity(config.components[i].initialHeat);
                 }
             }
 
@@ -296,6 +303,13 @@ public class Simulator implements AutoCloseable {
                 int heat = component == null ? 0 : component.getStoredHeat();
                 componentResults[i].minTemp = heat;
                 componentResults[i].maxTemp = heat;
+            }
+
+            for (int i = 0; i < componentResults.length; i++) {
+                var component = getComponent(i % COL_COUNT, i / COL_COUNT);
+                if (component != null) {
+                    component.onSimulationStarted(result, i);
+                }
             }
 
             while (reactorTickCounter < config.maxSimulationTicks) {
@@ -381,7 +395,7 @@ public class Simulator implements AutoCloseable {
                 if (compConfig == null) continue;
                 var component = getComponent(index % COL_COUNT, index / COL_COUNT);
                 boolean overThreshold = compConfig.hasAutomation && component != null
-                    && component.getStoredHeat() > compConfig.replacementThreshold;
+                    && component.getUsedHeatCapacity() > compConfig.replacementThreshold;
                 if (!overThreshold && contents[index] == compConfig.stack) continue;
 
                 componentResults[index].replaceCount++;
@@ -390,7 +404,7 @@ public class Simulator implements AutoCloseable {
                 var replacement = getComponent(index % COL_COUNT, index / COL_COUNT);
                 if (replacement != null) {
                     currentComponent = componentResults[index];
-                    replacement.addHeat(compConfig.initialHeat - replacement.getStoredHeat());
+                    replacement.setUsedHeatCapacity(compConfig.initialHeat);
                 }
                 if (compConfig.hasAutomation && compConfig.reactorPause > 0) {
                     int unpause = reactorTickCounter + compConfig.reactorPause;

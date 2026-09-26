@@ -531,8 +531,10 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                     "nh_gui.sim.comp_settings.initial_heat",
                     () -> componentValue(component -> component.initialHeat),
                     value -> {
-                        if (config.components[selectedComponent] != null)
-                            config.components[selectedComponent].initialHeat = value;
+                        var component = config.components[selectedComponent];
+                        if (component != null) {
+                            component.initialHeat = Math.min(value, Simulator.maxComponentInitialHeat(component.stack));
+                        }
                     }))
             .child(
                 numericSetting(

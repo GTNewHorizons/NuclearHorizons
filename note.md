@@ -1,3 +1,1 @@
-Horizon-QA reproduced a completed server simulation whose result disappeared from the GUI during configuration sync. this scenario inserts fuel through inventory clicks, presses Start and checks that the result stays visible. it then changes the layout, checks that the old result is cleared, and reruns to verify the updated output
-
-the component settings scenario clicks the first and last grid slots, edits independent thresholds and pauses, checks empty-slot selection leaves the layout unchanged, and reopens the GUI to verify saved settings. screenshots show selection and automation markers, including disabling one marker while preserving the other
+Code review found that NH treated item damage as initial heat even for parts where damage means spent capacity. The simulator now asks the adapter for actual capacity. The GUI clamps values to it and imports reject values such as 1001 HU for a 1000-HU vent before simulation or world save.

@@ -49,6 +49,21 @@ public class HeatAbsorberAdapter implements IComponentAdapter {
     }
 
     @Override
+    public int getUsedHeatCapacity() {
+        return this.heatContainer.getUsedHeatCapacity(itemStack);
+    }
+
+    @Override
+    public void setUsedHeatCapacity(int usedHeatCapacity) {
+        this.heatContainer.setUsedHeatCapacity(itemStack, usedHeatCapacity);
+    }
+
+    @Override
+    public boolean canVentHeat() {
+        return this.heatContainer.canVentHeat(itemStack);
+    }
+
+    @Override
     public int getMaxHeat() {
         return this.heatContainer.getMaxHeat(itemStack);
     }
