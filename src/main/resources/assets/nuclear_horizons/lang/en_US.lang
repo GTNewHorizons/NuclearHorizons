@@ -63,6 +63,7 @@ item.debugHeatAbsorber.name=Creative Heat Absorber
 item.reactorPlatingHeatDebug.name=Creative Reactor Plating
 item.thoriumBreederRod.name=Thorium Breeding Rod
 item.thoriumBreederRodFinished.name=Thorium Breeding Rod (Finished)
+item.lithiumBreederCell.name=Lithium Breeder Cell
 
 item.metaitem.0.name=Fuel Rod (Empty)
 

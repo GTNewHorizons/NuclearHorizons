@@ -156,5 +156,6 @@ public class SimulationItems {
         registerSimulationItem(70, RodExcitedPlutonium2);
         registerSimulationItem(71, RodExcitedPlutonium);
         registerSimulationItem(72, RodGlowstone);
+        registerSimulationItem(85, NHItemList.LITHIUM_BREEDER_CELL);
     }
 }

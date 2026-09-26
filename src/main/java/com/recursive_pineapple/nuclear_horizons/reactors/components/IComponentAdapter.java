@@ -43,6 +43,10 @@ public interface IComponentAdapter {
         return false;
     }
 
+    public default boolean reflectsNeutronsForEnergy() {
+        return reflectsNeutrons();
+    }
+
     public default int getFuelRodCount() {
         return 0;
     }

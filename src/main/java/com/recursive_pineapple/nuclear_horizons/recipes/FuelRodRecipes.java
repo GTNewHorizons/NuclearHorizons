@@ -6,8 +6,10 @@ import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.DEPLETED_U
 import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.ENRICHED_MOX_FUEL;
 import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.ENRICHED_THORIUM_FUEL;
 import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.ENRICHED_URANIUM_FUEL;
+import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.LITHIUM;
 import static com.recursive_pineapple.nuclear_horizons.recipes.GTMats.REFINED_THORIUM;
 import static gregtech.api.recipe.RecipeMaps.assemblerRecipes;
+import static gregtech.api.recipe.RecipeMaps.cannerRecipes;
 import static gregtech.api.recipe.RecipeMaps.thermalCentrifugeRecipes;
 import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 
@@ -126,6 +128,13 @@ public class FuelRodRecipes {
             .duration(10 * SECONDS)
             .eut(TierEU.RECIPE_MV)
             .addTo(assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(NHItemList.EMPTY_FUEL_ROD_BASIC.get(1), LITHIUM.getDustTiny(1))
+            .itemOutputs(NHItemList.LITHIUM_BREEDER_CELL.get(1))
+            .duration(16)
+            .eut(60)
+            .addTo(cannerRecipes);
     }
 
     public static void registerRecyclingRecipes() {

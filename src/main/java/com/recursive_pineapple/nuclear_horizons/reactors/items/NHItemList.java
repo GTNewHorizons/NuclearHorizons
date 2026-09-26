@@ -56,8 +56,11 @@ public enum NHItemList {
     THORIUM_BREEDER_ROD_FINISHED(
         new BasicFuelRodProductItem("thoriumBreederRodFinished", "reactorThoriumSingleDepleted")),
 
-    THORIUM_BREEDER_ROD(new BasicBreederRodItem("thoriumBreederRod", "reactorThoriumSingle", 1_000, 1, 5_000)
+    THORIUM_BREEDER_ROD(new BasicBreederRodItem("thoriumBreederRod", "reactorThoriumSingle", 1_000, 1, 5_000, false)
         .setProduct(() -> THORIUM_BREEDER_ROD_FINISHED.get(1))),
+
+    LITHIUM_BREEDER_CELL(new BasicBreederRodItem("lithiumBreederCell", "reactorLithiumCell", 3_000, 1, 10_000, true)
+        .setProduct(() -> gregtech.api.enums.ItemList.DepletedRodLithium.get(1))),
 
     ITEMS(new MetaItem()),
 

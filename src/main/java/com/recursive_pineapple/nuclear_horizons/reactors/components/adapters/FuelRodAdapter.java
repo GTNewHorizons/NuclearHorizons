@@ -71,7 +71,7 @@ public class FuelRodAdapter implements IComponentAdapter {
             return;
         }
 
-        int pulses = this.getPulseCount();
+        int pulses = this.getPulseCount(false);
         int heat = (int) (fuelRod.getHeatMult(itemStack) * fuelRod.getRodCount(itemStack)
             * getHeatMultiplier()
             * pulses
@@ -111,7 +111,7 @@ public class FuelRodAdapter implements IComponentAdapter {
             return;
         }
 
-        int pulses = this.getPulseCount();
+        int pulses = this.getPulseCount(true);
         double energy = fuelRod.getEnergyMult(itemStack) * fuelRod.getRodCount(itemStack) * getEUMultiplier() * pulses;
 
         reactor.addEU(energy);
@@ -132,7 +132,7 @@ public class FuelRodAdapter implements IComponentAdapter {
         return this.fuelRod.getRodCount(itemStack);
     }
 
-    private int getPulseCount() {
+    private int getPulseCount(boolean forEnergy) {
         int pulses = 1 + this.getFuelRodCount() / 2;
 
         for (var dir : InventoryDirection.values()) {
@@ -145,7 +145,8 @@ public class FuelRodAdapter implements IComponentAdapter {
 
             var neighbour = reactor.getComponent(x2, y2);
 
-            if (neighbour != null && neighbour.reflectsNeutrons()) {
+            if (neighbour != null
+                && (forEnergy ? neighbour.reflectsNeutronsForEnergy() : neighbour.reflectsNeutrons())) {
                 pulses++;
             }
         }
