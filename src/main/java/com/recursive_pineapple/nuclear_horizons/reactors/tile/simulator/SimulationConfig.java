@@ -1,25 +1,25 @@
 package com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator;
 
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.io.IOException;
+import java.util.Base64;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTSizeTracker;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
-import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 import org.jetbrains.annotations.NotNull;
 
 import com.cleanroommc.modularui.utils.item.IItemHandlerModifiable;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.ComponentRegistry;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 
@@ -55,6 +55,12 @@ public class SimulationConfig implements IItemHandlerModifiable {
     }
 
     public String getCode() {
+        return "nh=" + Base64.getEncoder()
+            .encodeToString(save().toByteArray());
+    }
+
+    /** Exports only configurations that the external planner can represent without data loss. */
+    public String getPlannerCode() {
         BigintStorage storage = new BigintStorage();
 
         storage.store(maxSimulationTicks, 5000000);
@@ -81,21 +87,9 @@ public class SimulationConfig implements IItemHandlerModifiable {
             }
 
             Integer componentId = SimulationItems.getSimulationItemId(c.stack);
-
-            if (componentId == null) {
-                storage.store(0, 72);
-                NuclearHorizons.LOG.warn(
-                    "Could not save reactor item " + c.stack
-                        + " into config code because it does not have a simulation item ID");
-                continue;
-            }
-
-            if (componentId > 72) {
-                storage.store(0, 72);
-                NuclearHorizons.LOG.warn(
-                    "Could not save reactor item " + c.stack
-                        + " into config code because its simulation item ID was greater than 72");
-                continue;
+            if (componentId != null && componentId == 73) componentId = 71;
+            if (componentId == null || componentId > 72) {
+                throw new IllegalArgumentException("The planner does not support the component in slot " + (i + 1));
             }
 
             if (c.hasAutomation) {
@@ -116,10 +110,35 @@ public class SimulationConfig implements IItemHandlerModifiable {
 
         storage.store(4, 255);
 
-        return "erp=" + storage.outputBase64();
+        String code = "erp=" + storage.outputBase64();
+        if (!fromCode(code).save()
+            .equals(save())) {
+            throw new IllegalArgumentException(
+                "The planner cannot preserve all settings or item state. Use the configuration code.");
+        }
+        return code;
     }
 
     public static SimulationConfig fromCode(String code) {
+        if (code != null && code.startsWith("nh=")) {
+            try {
+                return load(
+                    SimulatorProtos.SimulationConfig.parseFrom(
+                        Base64.getDecoder()
+                            .decode(code.substring(3))));
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalArgumentException("Invalid Nuclear Horizons configuration code", e);
+            }
+        }
+        return fromPlannerCode(code, false);
+    }
+
+    /** Version 1 worlds used the historical NH mapping, where planner ID 71 meant a single rod. */
+    public static SimulationConfig fromLegacyCode(String code) {
+        return fromPlannerCode(code, true);
+    }
+
+    private static SimulationConfig fromPlannerCode(String code, boolean legacy) {
         SimulationConfig config = new SimulationConfig();
 
         if (code == null || code.isEmpty()) {
@@ -130,30 +149,12 @@ public class SimulationConfig implements IItemHandlerModifiable {
             code = code.substring(4);
         }
 
-        BigintStorage storage = null;
-        try {
-            storage = BigintStorage.inputBase64(code);
-        } catch (Throwable t) {
-            Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                .printChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED.toString() + EnumChatFormatting.ITALIC.toString()
-                            + "Could not load invalid reactor code."));
-            NuclearHorizons.LOG.error("Could not parse reactor code into BigInteger", t);
-            return new SimulationConfig();
-        }
+        BigintStorage storage = BigintStorage.inputBase64(code);
 
         int revision = storage.extract(255);
 
         if (revision < 0 || revision > 4) {
-            Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                .printChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED.toString() + EnumChatFormatting.ITALIC.toString()
-                            + "Could not load invalid reactor code."));
-            NuclearHorizons.LOG
-                .error("Reactor code had incorrect revision (was " + revision + ", should be 4 >= x >= 0)");
-            return new SimulationConfig();
+            throw new IllegalArgumentException("Unsupported planner code revision: " + revision);
         }
 
         if (revision >= 1) {
@@ -189,11 +190,11 @@ public class SimulationConfig implements IItemHandlerModifiable {
                         }
                     }
 
-                    compConfig.stack = SimulationItems.getSimulationItem(componentId);
+                    compConfig.stack = SimulationItems
+                        .getSimulationItem(!legacy && componentId == 71 ? 73 : componentId);
 
                     if (compConfig.stack == null) {
-                        NuclearHorizons.LOG.warn("Could not find simulation item with component id " + componentId);
-                        continue;
+                        throw new IllegalArgumentException("Unsupported planner component: " + componentId);
                     }
 
                     config.components[row * TileReactorCore.COL_COUNT + col] = compConfig;
@@ -221,21 +222,19 @@ public class SimulationConfig implements IItemHandlerModifiable {
         config.maxSimulationTicks = storage.extract(5000000);
 
         if (!storage.isEmpty()) {
-            Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                .printChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED.toString() + EnumChatFormatting.ITALIC.toString()
-                            + "Could not load invalid reactor code."));
-            NuclearHorizons.LOG
-                .error("Reactor code had left over data after reading all fields: assuming something has gone wrong.");
-            return new SimulationConfig();
+            throw new IllegalArgumentException("Planner code contains unexpected trailing data");
         }
 
+        config.validate();
         return config;
     }
 
     public static @Nonnull SimulationConfig read(ByteBuf buffer) {
-        byte[] data = new byte[buffer.readInt()];
+        int length = buffer.readInt();
+        if (length < 0 || length > buffer.readableBytes() || length > 2_097_152) {
+            throw new IllegalArgumentException("Invalid configuration payload length");
+        }
+        byte[] data = new byte[length];
 
         if (data.length == 0) {
             return new SimulationConfig();
@@ -246,8 +245,7 @@ public class SimulationConfig implements IItemHandlerModifiable {
         try {
             return SimulationConfig.load(SimulatorProtos.SimulationConfig.parseFrom(data));
         } catch (InvalidProtocolBufferException e) {
-            NuclearHorizons.LOG.error("Could not read data for SimulationConfig", e);
-            return new SimulationConfig();
+            throw new IllegalArgumentException("Invalid configuration payload", e);
         }
     }
 
@@ -263,7 +261,8 @@ public class SimulationConfig implements IItemHandlerModifiable {
     }
 
     public SimulatorProtos.SimulationConfig save() {
-        return SimulatorProtos.SimulationConfig.newBuilder()
+        validate();
+        var builder = SimulatorProtos.SimulationConfig.newBuilder()
             .setPulsed(pulsed)
             .setAutomated(automated)
             .setFluid(fluid)
@@ -272,39 +271,57 @@ public class SimulationConfig implements IItemHandlerModifiable {
             .setOffPulse(offPulse)
             .setSuspendTemp(suspendTemp)
             .setResumeTemp(resumeTemp)
-            .setMaxSimulationTicks(maxSimulationTicks)
-            .addAllComponents(
-                IntStream.range(0, components.length)
-                    .mapToObj(i -> {
-                        var c = components[i];
+            .setMaxSimulationTicks(maxSimulationTicks);
 
-                        if (c == null) {
-                            return null;
-                        }
+        for (int i = 0; i < components.length; i++) {
+            var component = components[i];
+            if (component == null) continue;
+            Integer id = SimulationItems.getSimulationItemId(component.stack);
+            if (id == null) {
+                throw new IllegalArgumentException("Unsupported component in slot " + (i + 1));
+            }
+            builder.addComponents(
+                SimulatorProtos.ComponentConfig.newBuilder()
+                    .setIndex(i)
+                    .setItem(id)
+                    .setHasAutomation(component.hasAutomation)
+                    .setInitialHeat(component.initialHeat)
+                    .setReplacementThreshold(component.replacementThreshold)
+                    .setReactorPause(component.reactorPause)
+                    .setStackNbt(saveStackState(component.stack)));
+        }
+        return builder.build();
+    }
 
-                        Integer id = SimulationItems.getSimulationItemId(c.stack);
+    private static ByteString saveStackState(ItemStack stack) {
+        NBTTagCompound state = stack.writeToNBT(new NBTTagCompound());
+        // Runtime item IDs are not portable. The component catalog owns identity.
+        state.removeTag("id");
+        try {
+            return ByteString.copyFrom(CompressedStreamTools.compress(state));
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not save component state", e);
+        }
+    }
 
-                        if (id == null) {
-                            return null;
-                        } else {
-                            return SimulatorProtos.ComponentConfig.newBuilder()
-                                .setIndex(i)
-                                .setItem(id)
-                                .setHasAutomation(c.hasAutomation)
-                                .setInitialHeat(c.initialHeat)
-                                .setReplacementThreshold(c.replacementThreshold)
-                                .setReactorPause(c.reactorPause)
-                                .build();
-                        }
-                    })
-                    .filter(i -> i != null)
-                    .collect(Collectors.toList()))
-            .build();
+    private static ItemStack loadStackState(ItemStack template, ByteString data) {
+        if (data.isEmpty()) return template;
+        try {
+            NBTTagCompound state = CompressedStreamTools
+                .func_152457_a(data.toByteArray(), new NBTSizeTracker(2_097_152));
+            int count = state.getByte("Count");
+            int damage = state.getShort("Damage");
+            if (count < 1 || damage < 0) throw new IllegalArgumentException("Invalid component stack state");
+            ItemStack stack = new ItemStack(template.getItem(), count, damage);
+            if (state.hasKey("tag", 10)) stack.setTagCompound(state.getCompoundTag("tag"));
+            return stack;
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalArgumentException("Invalid component NBT", e);
+        }
     }
 
     public static SimulationConfig load(SimulatorProtos.SimulationConfig data) {
         SimulationConfig config = new SimulationConfig();
-
         config.pulsed = data.getPulsed();
         config.automated = data.getAutomated();
         config.fluid = data.getFluid();
@@ -314,28 +331,51 @@ public class SimulationConfig implements IItemHandlerModifiable {
         config.suspendTemp = data.getSuspendTemp();
         config.resumeTemp = data.getResumeTemp();
         config.maxSimulationTicks = data.getMaxSimulationTicks();
-
-        for (int i = 0; i < data.getComponentsCount(); i++) {
-            var c = data.getComponents(i);
-
-            var comp = new SimComponentConfig();
-
-            comp.stack = SimulationItems.getSimulationItem(c.getItem());
-
-            if (comp.stack == null) {
-                config.components[c.getIndex()] = null;
-                continue;
+        for (var component : data.getComponentsList()) {
+            int index = component.getIndex();
+            if (index < 0 || index >= config.components.length || config.components[index] != null) {
+                throw new IllegalArgumentException("Invalid or duplicate component slot: " + index);
             }
-
-            comp.hasAutomation = c.getHasAutomation();
-            comp.initialHeat = c.getInitialHeat();
-            comp.replacementThreshold = c.getReplacementThreshold();
-            comp.reactorPause = c.getReactorPause();
-
-            config.components[c.getIndex()] = comp;
+            var comp = new SimComponentConfig();
+            ItemStack template = SimulationItems.getSimulationItem(component.getItem());
+            if (template == null) {
+                throw new IllegalArgumentException("Unknown component ID: " + component.getItem());
+            }
+            comp.stack = loadStackState(template, component.getStackNbt());
+            if (!SimulationItems.getSimulationItemId(template)
+                .equals(SimulationItems.getSimulationItemId(comp.stack))) {
+                throw new IllegalArgumentException("Component state changes its catalog identity");
+            }
+            comp.hasAutomation = component.getHasAutomation();
+            comp.initialHeat = component.getInitialHeat();
+            comp.replacementThreshold = component.getReplacementThreshold();
+            comp.reactorPause = component.getReactorPause();
+            config.components[index] = comp;
         }
-
+        config.validate();
         return config;
+    }
+
+    private void validate() {
+        if (components.length != TileReactorCore.COL_COUNT * TileReactorCore.ROW_COUNT || initialHeat < 0
+            || onPulse < 0
+            || offPulse < 0
+            || suspendTemp < 0
+            || resumeTemp < 0
+            || maxSimulationTicks < 0
+            || maxSimulationTicks > 5_000_000) {
+            throw new IllegalArgumentException("Invalid reactor settings");
+        }
+        for (var component : components) {
+            if (component != null && (component.stack == null || component.stack.stackSize < 1
+                || component.stack.stackSize > 64
+                || component.initialHeat < 0
+                || component.replacementThreshold < 0
+                || component.reactorPause < 0
+                || component.reactorPause > 10_000)) {
+                throw new IllegalArgumentException("Invalid component settings");
+            }
+        }
     }
 
     public void put(@NotNull SimulationConfig source) {
@@ -382,7 +422,7 @@ public class SimulationConfig implements IItemHandlerModifiable {
             components[slot] = null;
         }
 
-        return withResults(item.stack, slot);
+        return withResults(item.stack.copy(), slot);
     }
 
     @Override
@@ -403,7 +443,9 @@ public class SimulationConfig implements IItemHandlerModifiable {
     @Override
     @Nullable
     public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-        if (components[slot] != null || stack == null || !ComponentRegistry.isReactorItem(stack)) {
+        if (components[slot] != null || stack == null
+            || !ComponentRegistry.isReactorItem(stack)
+            || SimulationItems.getSimulationItemId(stack) == null) {
             return stack;
         }
 
@@ -426,6 +468,12 @@ public class SimulationConfig implements IItemHandlerModifiable {
         if (stack == null || !ComponentRegistry.isReactorItem(stack)) {
             components[slot] = null;
         } else {
+            Integer id = SimulationItems.getSimulationItemId(stack);
+            if (id == null) throw new IllegalArgumentException("Unsupported simulator component");
+            if (components[slot] != null && id.equals(SimulationItems.getSimulationItemId(components[slot].stack))) {
+                components[slot].stack = stack.copy();
+                return;
+            }
             var config = new SimComponentConfig();
             config.stack = stack.copy();
 

@@ -1,1 +1,1 @@
-a catalog audit found missing NH parts and GT lithium, MOX and quadruple Excited Plutonium. register them with stable IDs and return copied stacks so simulations do not mutate catalog templates. retain ID 71 as an alias for existing saved layouts
+A format audit found erp= could not represent every NH setting and could silently lose items. The nh= format now keeps the full layout and stack NBT. Code review found invalid imports could replace a valid tile layout and later fail during world save, so imports are validated first. Existing world data retains its old ID 71 meaning.
