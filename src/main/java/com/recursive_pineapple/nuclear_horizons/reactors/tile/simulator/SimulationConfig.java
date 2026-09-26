@@ -528,8 +528,15 @@ public class SimulationConfig implements IItemHandlerModifiable {
                     addResultLine(lore, "heating_per_item", "hu_total", r.totalHullHeating / (r.replaceCount + 1));
                 }
 
-                if (r.totalAirHeating != 0) {
-                    addResultLine(lore, "avg_heat_output", "hu_total", r.totalAirHeating / res.simTime);
+                if (r.maxAirHeatingCapacity != null || r.totalAirHeating != 0) {
+                    addResultLine(
+                        lore,
+                        "avg_heat_output",
+                        "hu_per_sec",
+                        res.simTime == 0 ? null : r.totalAirHeating / res.simTime);
+                    if (r.maxAirHeatingCapacity != null) {
+                        addResultLine(lore, "ideal_heat_output", "hu_per_sec", r.maxAirHeatingCapacity);
+                    }
                 }
 
                 addResultLine(lore, "replace_count", null, r.replaceCount);

@@ -5223,6 +5223,20 @@ public final class SimulatorProtos {
          * @return The totalEUOutput.
          */
         long getTotalEUOutput();
+
+        /**
+         * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+         *
+         * @return Whether the maxAirHeatingCapacity field is set.
+         */
+        boolean hasMaxAirHeatingCapacity();
+
+        /**
+         * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+         *
+         * @return The maxAirHeatingCapacity.
+         */
+        long getMaxAirHeatingCapacity();
     }
 
     /**
@@ -5262,6 +5276,7 @@ public final class SimulatorProtos {
                     com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulatorProtos.ComponentResult.Builder.class);
         }
 
+        private int bitField0_;
         public static final int INDEX_FIELD_NUMBER = 1;
         private int index_ = 0;
 
@@ -5379,6 +5394,29 @@ public final class SimulatorProtos {
             return totalEUOutput_;
         }
 
+        public static final int MAXAIRHEATINGCAPACITY_FIELD_NUMBER = 10;
+        private long maxAirHeatingCapacity_ = 0L;
+
+        /**
+         * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+         *
+         * @return Whether the maxAirHeatingCapacity field is set.
+         */
+        @java.lang.Override
+        public boolean hasMaxAirHeatingCapacity() {
+            return ((bitField0_ & 0x00000001) != 0);
+        }
+
+        /**
+         * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+         *
+         * @return The maxAirHeatingCapacity.
+         */
+        @java.lang.Override
+        public long getMaxAirHeatingCapacity() {
+            return maxAirHeatingCapacity_;
+        }
+
         private byte memoizedIsInitialized = -1;
 
         @java.lang.Override
@@ -5420,6 +5458,9 @@ public final class SimulatorProtos {
             if (totalEUOutput_ != 0L) {
                 output.writeInt64(9, totalEUOutput_);
             }
+            if (((bitField0_ & 0x00000001) != 0)) {
+                output.writeInt64(10, maxAirHeatingCapacity_);
+            }
             getUnknownFields().writeTo(output);
         }
 
@@ -5456,6 +5497,9 @@ public final class SimulatorProtos {
             if (totalEUOutput_ != 0L) {
                 size += com.google.protobuf.CodedOutputStream.computeInt64Size(9, totalEUOutput_);
             }
+            if (((bitField0_ & 0x00000001) != 0)) {
+                size += com.google.protobuf.CodedOutputStream.computeInt64Size(10, maxAirHeatingCapacity_);
+            }
             size += getUnknownFields().getSerializedSize();
             memoizedSize = size;
             return size;
@@ -5480,6 +5524,10 @@ public final class SimulatorProtos {
             if (getMaxTemp() != other.getMaxTemp()) return false;
             if (getReplaceCount() != other.getReplaceCount()) return false;
             if (getTotalEUOutput() != other.getTotalEUOutput()) return false;
+            if (hasMaxAirHeatingCapacity() != other.hasMaxAirHeatingCapacity()) return false;
+            if (hasMaxAirHeatingCapacity()) {
+                if (getMaxAirHeatingCapacity() != other.getMaxAirHeatingCapacity()) return false;
+            }
             if (!getUnknownFields().equals(other.getUnknownFields())) return false;
             return true;
         }
@@ -5509,6 +5557,10 @@ public final class SimulatorProtos {
             hash = (53 * hash) + getReplaceCount();
             hash = (37 * hash) + TOTALEUOUTPUT_FIELD_NUMBER;
             hash = (53 * hash) + com.google.protobuf.Internal.hashLong(getTotalEUOutput());
+            if (hasMaxAirHeatingCapacity()) {
+                hash = (37 * hash) + MAXAIRHEATINGCAPACITY_FIELD_NUMBER;
+                hash = (53 * hash) + com.google.protobuf.Internal.hashLong(getMaxAirHeatingCapacity());
+            }
             hash = (29 * hash) + getUnknownFields().hashCode();
             memoizedHashCode = hash;
             return hash;
@@ -5649,6 +5701,7 @@ public final class SimulatorProtos {
                 maxTemp_ = 0;
                 replaceCount_ = 0;
                 totalEUOutput_ = 0L;
+                maxAirHeatingCapacity_ = 0L;
                 return this;
             }
 
@@ -5713,6 +5766,12 @@ public final class SimulatorProtos {
                 if (((from_bitField0_ & 0x00000100) != 0)) {
                     result.totalEUOutput_ = totalEUOutput_;
                 }
+                int to_bitField0_ = 0;
+                if (((from_bitField0_ & 0x00000200) != 0)) {
+                    result.maxAirHeatingCapacity_ = maxAirHeatingCapacity_;
+                    to_bitField0_ |= 0x00000001;
+                }
+                result.bitField0_ |= to_bitField0_;
             }
 
             @java.lang.Override
@@ -5758,6 +5817,9 @@ public final class SimulatorProtos {
                 }
                 if (other.getTotalEUOutput() != 0L) {
                     setTotalEUOutput(other.getTotalEUOutput());
+                }
+                if (other.hasMaxAirHeatingCapacity()) {
+                    setMaxAirHeatingCapacity(other.getMaxAirHeatingCapacity());
                 }
                 this.mergeUnknownFields(other.getUnknownFields());
                 onChanged();
@@ -5828,6 +5890,11 @@ public final class SimulatorProtos {
                                 bitField0_ |= 0x00000100;
                                 break;
                             } // case 72
+                            case 80: {
+                                maxAirHeatingCapacity_ = input.readInt64();
+                                bitField0_ |= 0x00000200;
+                                break;
+                            } // case 80
                             default: {
                                 if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                                     done = true; // was an endgroup tag
@@ -6184,6 +6251,54 @@ public final class SimulatorProtos {
             public Builder clearTotalEUOutput() {
                 bitField0_ = (bitField0_ & ~0x00000100);
                 totalEUOutput_ = 0L;
+                onChanged();
+                return this;
+            }
+
+            private long maxAirHeatingCapacity_;
+
+            /**
+             * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+             *
+             * @return Whether the maxAirHeatingCapacity field is set.
+             */
+            @java.lang.Override
+            public boolean hasMaxAirHeatingCapacity() {
+                return ((bitField0_ & 0x00000200) != 0);
+            }
+
+            /**
+             * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+             *
+             * @return The maxAirHeatingCapacity.
+             */
+            @java.lang.Override
+            public long getMaxAirHeatingCapacity() {
+                return maxAirHeatingCapacity_;
+            }
+
+            /**
+             * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+             *
+             * @param value The maxAirHeatingCapacity to set.
+             * @return This builder for chaining.
+             */
+            public Builder setMaxAirHeatingCapacity(long value) {
+
+                maxAirHeatingCapacity_ = value;
+                bitField0_ |= 0x00000200;
+                onChanged();
+                return this;
+            }
+
+            /**
+             * <code>optional int64 maxAirHeatingCapacity = 10;</code>
+             *
+             * @return This builder for chaining.
+             */
+            public Builder clearMaxAirHeatingCapacity() {
+                bitField0_ = (bitField0_ & ~0x00000200);
+                maxAirHeatingCapacity_ = 0L;
                 onChanged();
                 return this;
             }
@@ -7330,17 +7445,18 @@ public final class SimulatorProtos {
                 + "(\0132\020.ComponentResultB\017\n\r_timeToNormalB\r\n"
                 + "\013_timeToBurnB\022\n\020_timeToEvaporateB\r\n\013_tim"
                 + "eToHurtB\r\n\013_timeToLavaB\020\n\016_timeToExplode"
-                + "\"\323\001\n\017ComponentResult\022\r\n\005index\030\001 \001(\005\022\027\n\017t"
+                + "\"\221\002\n\017ComponentResult\022\r\n\005index\030\001 \001(\005\022\027\n\017t"
                 + "otalAirHeating\030\002 \001(\003\022\030\n\020totalHullHeating"
                 + "\030\003 \001(\003\022\030\n\020totalHullCooling\030\004 \001(\003\022\025\n\rtota"
                 + "lTempSecs\030\005 \001(\003\022\017\n\007minTemp\030\006 \001(\005\022\017\n\007maxT"
                 + "emp\030\007 \001(\005\022\024\n\014replaceCount\030\010 \001(\005\022\025\n\rtotal"
-                + "EUOutput\030\t \001(\003\"k\n\014CustomResult\022\014\n\004i18n\030\001"
-                + " \001(\t\022\025\n\013float_value\030\002 \001(\002H\000\022\024\n\nlong_valu"
-                + "e\030\003 \001(\003H\000\022\026\n\014string_value\030\004 \001(\tH\000B\010\n\006Val"
-                + "uesBS\n@com.recursive_pineapple.nuclear_h"
-                + "orizons.reactors.tile.simulatorB\017Simulat"
-                + "orProtosb\006proto3" };
+                + "EUOutput\030\t \001(\003\022\"\n\025maxAirHeatingCapacity\030"
+                + "\n \001(\003H\000\210\001\001B\030\n\026_maxAirHeatingCapacity\"k\n\014"
+                + "CustomResult\022\014\n\004i18n\030\001 \001(\t\022\025\n\013float_valu"
+                + "e\030\002 \001(\002H\000\022\024\n\nlong_value\030\003 \001(\003H\000\022\026\n\014strin"
+                + "g_value\030\004 \001(\tH\000B\010\n\006ValuesBS\n@com.recursi"
+                + "ve_pineapple.nuclear_horizons.reactors.t"
+                + "ile.simulatorB\017SimulatorProtosb\006proto3" };
         descriptor = com.google.protobuf.Descriptors.FileDescriptor
             .internalBuildGeneratedFileFrom(descriptorData, new com.google.protobuf.Descriptors.FileDescriptor[] {});
         internal_static_SimulationConfig_descriptor = getDescriptor().getMessageTypes()
@@ -7368,7 +7484,7 @@ public final class SimulatorProtos {
         internal_static_ComponentResult_fieldAccessorTable = new com.google.protobuf.GeneratedMessage.FieldAccessorTable(
             internal_static_ComponentResult_descriptor,
             new java.lang.String[] { "Index", "TotalAirHeating", "TotalHullHeating", "TotalHullCooling",
-                "TotalTempSecs", "MinTemp", "MaxTemp", "ReplaceCount", "TotalEUOutput", });
+                "TotalTempSecs", "MinTemp", "MaxTemp", "ReplaceCount", "TotalEUOutput", "MaxAirHeatingCapacity", });
         internal_static_CustomResult_descriptor = getDescriptor().getMessageTypes()
             .get(4);
         internal_static_CustomResult_fieldAccessorTable = new com.google.protobuf.GeneratedMessage.FieldAccessorTable(

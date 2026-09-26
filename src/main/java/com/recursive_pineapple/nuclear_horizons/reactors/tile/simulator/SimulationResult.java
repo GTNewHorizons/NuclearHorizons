@@ -67,7 +67,7 @@ public class SimulationResult {
                         if (c == null) {
                             return null;
                         } else {
-                            return SimulatorProtos.ComponentResult.newBuilder()
+                            var componentBuilder = SimulatorProtos.ComponentResult.newBuilder()
                                 .setIndex(i)
                                 .setTotalAirHeating(c.totalAirHeating)
                                 .setTotalHullHeating(c.totalHullHeating)
@@ -76,8 +76,11 @@ public class SimulationResult {
                                 .setTotalEUOutput(c.totalEUOutput)
                                 .setMinTemp(c.minTemp)
                                 .setMaxTemp(c.maxTemp)
-                                .setReplaceCount(c.replaceCount)
-                                .build();
+                                .setReplaceCount(c.replaceCount);
+                            if (c.maxAirHeatingCapacity != null) {
+                                componentBuilder.setMaxAirHeatingCapacity(c.maxAirHeatingCapacity);
+                            }
+                            return componentBuilder.build();
                         }
                     })
                     .filter(i -> i != null)
@@ -126,6 +129,7 @@ public class SimulationResult {
             comp.minTemp = c.getMinTemp();
             comp.maxTemp = c.getMaxTemp();
             comp.replaceCount = c.getReplaceCount();
+            if (c.hasMaxAirHeatingCapacity()) comp.maxAirHeatingCapacity = c.getMaxAirHeatingCapacity();
 
             result.componentResults[c.getIndex()] = comp;
         }

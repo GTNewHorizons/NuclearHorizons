@@ -6,7 +6,6 @@ import com.recursive_pineapple.nuclear_horizons.reactors.components.IComponentAd
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.InventoryDirection;
 import com.recursive_pineapple.nuclear_horizons.reactors.items.interfaces.IHeatMover;
-import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationComponentResult;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationResult;
 
 public class HeatMoverAdapter implements IComponentAdapter {
@@ -15,8 +14,6 @@ public class HeatMoverAdapter implements IComponentAdapter {
     protected final int x, y;
     protected final ItemStack itemStack;
     protected final IHeatMover heatMover;
-
-    protected SimulationComponentResult simResult;
 
     public HeatMoverAdapter(IReactorGrid reactor, int x, int y, ItemStack itemStack, IHeatMover heatMover) {
         this.reactor = reactor;
@@ -68,8 +65,25 @@ public class HeatMoverAdapter implements IComponentAdapter {
     }
 
     @Override
-    public void onSimulationFinished(SimulationResult result, int componentIndex) {
+    public void onSimulationStarted(SimulationResult result, int componentIndex) {
+        int ventableNeighbours = 0;
+        for (var direction : InventoryDirection.values()) {
+            int neighbourX = direction.offsetX(x);
+            int neighbourY = direction.offsetY(y);
+            if (neighbourX < 0 || neighbourY < 0
+                || neighbourX >= reactor.getWidth()
+                || neighbourY >= reactor.getHeight()) {
+                continue;
+            }
 
+            var neighbour = reactor.getComponent(neighbourX, neighbourY);
+            if (neighbour != null && neighbour.canVentHeat()) {
+                ventableNeighbours++;
+            }
+        }
+
+        result.componentResults[componentIndex].maxAirHeatingCapacity = heatMover
+            .getMaxAirCooling(itemStack, reactor, ventableNeighbours);
     }
 
     protected int getTransferFromReactor() {

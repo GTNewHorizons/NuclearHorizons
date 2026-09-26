@@ -89,6 +89,11 @@ public class BasicHeatExchangerItem extends ReactorItem implements IHeatMover {
     }
 
     @Override
+    public Long getMaxAirCooling(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor, int ventableNeighbours) {
+        return null;
+    }
+
+    @Override
     public @Nonnull IComponentAdapter getAdapter(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor, int x,
         int y) {
         return new HeatExchangerAdapter(reactor, x, y, itemStack, this);

@@ -20,6 +20,10 @@ public interface IHeatMover extends IHeatContainer {
 
     public int getTransferToAir(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor);
 
+    /** Ideal air cooling in HU/s, or null when this mover does not dissipate heat. */
+    public @Nullable Long getMaxAirCooling(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor,
+        int ventableNeighbours);
+
     @Override
     public default boolean isConsumable(@Nonnull ItemStack itemStack) {
         return true;

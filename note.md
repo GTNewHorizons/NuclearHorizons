@@ -1,1 +1,1 @@
-Code review found that NH treated item damage as initial heat even for parts where damage means spent capacity. The simulator now asks the adapter for actual capacity. The GUI clamps values to it and imports reject values such as 1001 HU for a 1000-HU vent before simulation or world save.
+the README lists missing total vent cooling in simulation results. add ideal capacity for the initial layout alongside measured cooling, including idle vents at 0 HU/s. fix the measured rate's unit from HU to HU/s and include the ideal value in result synchronization
