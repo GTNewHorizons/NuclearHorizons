@@ -55,7 +55,7 @@ public class HeatMoverAdapter implements IComponentAdapter {
     public int addHeat(int delta) {
         int rejected = this.heatMover.addHeat(itemStack, delta);
 
-        if (this.heatMover.getRemainingHealth(itemStack) <= 0) {
+        if (rejected > 0 && this.heatMover.getRemainingHealth(itemStack) <= 0) {
             this.reactor.setItem(this.x, this.y, null);
         }
 
@@ -88,8 +88,12 @@ public class HeatMoverAdapter implements IComponentAdapter {
         int fromReactor = getTransferFromReactor();
 
         if (fromReactor != 0) {
-            this.reactor.addHullHeat(-fromReactor);
-            this.addHeat(fromReactor);
+            int rejected = this.addHeat(fromReactor);
+            this.reactor.addHullHeat(-fromReactor + rejected);
+
+            if (this.reactor.getItem(x, y) != itemStack) {
+                return;
+            }
         }
 
         int toAir = getTransferToAir();
@@ -127,9 +131,12 @@ public class HeatMoverAdapter implements IComponentAdapter {
 
                 int fromNeighbour = getTransferFromNeighbour(neighbour);
 
-                if (fromNeighbour != 0) {
-                    neighbour.addHeat(-fromNeighbour);
-                    this.addHeat(fromNeighbour);
+                if (fromNeighbour > 0) {
+                    int rejected = this.addHeat(fromNeighbour);
+                    neighbour.addHeat(-fromNeighbour + rejected);
+                } else if (fromNeighbour < 0) {
+                    int rejected = neighbour.addHeat(-fromNeighbour);
+                    this.addHeat(fromNeighbour + rejected);
                 }
             }
         }

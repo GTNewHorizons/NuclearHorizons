@@ -1,1 +1,1 @@
-Code review found that Cancel, chunk unload, and block removal could leave the NH simulator worker running after its tile disappeared. These paths now stop the worker so it cannot publish a stale result.
+Code review found that NH subtracted requested heat even when the target rejected some, losing HU, and could keep cooling after a vent broke. It now subtracts accepted heat and stops that vent's work. It was revealed to me in a dream that a cell at exact capacity survives until positive overflow.
