@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.item.ItemStack;
 
+import com.recursive_pineapple.nuclear_horizons.Config;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.ComponentRegistry;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IComponentAdapter;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid;
@@ -83,7 +84,7 @@ public class Simulator implements AutoCloseable {
 
         public int reactorTickCounter = 0, storedHeat, addedHU, pulseCounter;
         public boolean pulseActive, suspended;
-        public double addedEU;
+        public int addedEU;
         public Integer nextUnpause;
 
         public SimulationConfig config;
@@ -191,7 +192,7 @@ public class Simulator implements AutoCloseable {
 
         @Override
         public int getMaxHullHeat() {
-            int maxHeat = 5000;
+            int maxHeat = Config.REACTOR_BASE_HEAT;
 
             for (int row = 0; row < ROW_COUNT; row++) {
                 for (int col = 0; col < COL_COUNT; col++) {
@@ -215,14 +216,19 @@ public class Simulator implements AutoCloseable {
             this.storedHeat += delta;
 
             if (delta > 0) {
+                result.totalHullHeating += delta;
                 currentComponent.totalHullHeating += delta;
             } else {
+                result.totalHullCooling += -delta;
                 currentComponent.totalHullCooling += -delta;
             }
         }
 
         @Override
         public int addAirHeat(int delta) {
+            if (isFluid()) {
+                delta *= Config.FLUID_NUKE_HU_MULTIPLIER;
+            }
             result.totalHU += delta;
             addedHU += delta;
             currentComponent.totalAirHeating += delta;
@@ -232,9 +238,12 @@ public class Simulator implements AutoCloseable {
 
         @Override
         public void addEU(double eu) {
-            result.totalEU += eu;
-            currentComponent.totalEUOutput += eu;
-            addedEU += eu;
+            if (!isFluid()) {
+                int output = (int) (eu * Config.REACTOR_EU_MULTIPLIER);
+                result.totalEU += output;
+                currentComponent.totalEUOutput += output;
+                addedEU += output;
+            }
         }
 
         @Override
@@ -262,6 +271,15 @@ public class Simulator implements AutoCloseable {
 
             this.pulseActive = true;
             this.storedHeat = config.initialHeat;
+            result.minTemp = storedHeat;
+            result.maxTemp = storedHeat;
+            recordTemperatureThresholds(0, false);
+            for (int i = 0; i < componentResults.length; i++) {
+                var component = getComponent(i % COL_COUNT, i / COL_COUNT);
+                int heat = component == null ? 0 : component.getStoredHeat();
+                componentResults[i].minTemp = heat;
+                componentResults[i].maxTemp = heat;
+            }
 
             while (reactorTickCounter < config.maxSimulationTicks) {
                 if (Thread.currentThread()
@@ -269,121 +287,24 @@ public class Simulator implements AutoCloseable {
                     throw new CancellationException();
                 }
 
-                if (reactorTickCounter % 2 == 0) {
-                    this.addedEU = 0;
-                } else {
-                    this.addedHU = 0;
-                }
+                this.addedEU = 0;
+                this.addedHU = 0;
+                boolean active = isActive();
 
-                for (int row = 0; row < ROW_COUNT; row++) {
-                    for (int col = 0; col < COL_COUNT; col++) {
-                        int index = row * COL_COUNT + col;
+                tickComponents(true);
+                tickComponents(false);
+                sampleComponents();
 
-                        var component = getComponent(col, row);
-
-                        if (component != null) {
-                            component.setSimulationComponent(result, index);
-                            currentComponent = componentResults[index];
-
-                            if (reactorTickCounter % 2 == 0) {
-                                component.onEnergyTick();
-                            } else {
-                                component.onHeatTick();
-                            }
-
-                            var heat = component.getStoredHeat();
-
-                            currentComponent.totalTempSecs += heat;
-
-                            if (heat < currentComponent.minTemp) {
-                                currentComponent.minTemp = heat;
-                            }
-
-                            if (heat > currentComponent.maxTemp) {
-                                currentComponent.maxTemp = heat;
-                            }
-
-                            var compConfig = config.components[index];
-
-                            if (compConfig.hasAutomation
-                                && component.getStoredHeat() > compConfig.replacementThreshold) {
-                                components[index] = null;
-                                contents[index] = null;
-                            }
-
-                            // may be set to null by the component itself, or to e.g. a depleted fuel rod
-                            if (contents[index] == null
-                                || !ItemStack.areItemStacksEqual(contents[index], compConfig.stack)) {
-                                currentComponent.replaceCount++;
-                                contents[index] = compConfig.stack;
-                            }
-                        }
-                    }
-                }
-
-                if (reactorTickCounter % 2 == 0) {
-                    int eupt = (int) (this.addedEU / 20);
-
-                    if (eupt < result.minEUpT) {
-                        result.minEUpT = eupt;
-                    }
-
-                    if (eupt > result.maxEUpT) {
-                        result.maxEUpT = eupt;
-                    }
-                } else {
-                    int hups = this.addedHU;
-
-                    if (hups < result.minHUpS) {
-                        result.minHUpS = hups;
-                    }
-
-                    if (hups > result.maxHUpS) {
-                        result.maxHUpS = hups;
-                    }
-
-                    if (storedHeat < result.minTemp) {
-                        result.minTemp = storedHeat;
-                    }
-
-                    if (storedHeat > result.maxTemp) {
-                        result.maxTemp = storedHeat;
-                    }
-
-                    result.totalTempSecs += storedHeat;
-
-                    double ratio = storedHeat / (double) getMaxHullHeat();
-
-                    if (result.timeToEvaporate != null && result.timeToNormal == null && ratio < 0.5) {
-                        result.timeToNormal = reactorTickCounter;
-                    }
-
-                    if (result.timeToBurn == null && ratio >= 0.4) {
-                        result.timeToBurn = reactorTickCounter;
-                    }
-
-                    if (result.timeToEvaporate == null && ratio >= 0.5) {
-                        result.timeToEvaporate = reactorTickCounter;
-                    }
-
-                    if (result.timeToHurt == null && ratio >= 0.7) {
-                        result.timeToHurt = reactorTickCounter;
-                    }
-
-                    if (result.timeToLava == null && ratio >= 0.85) {
-                        result.timeToLava = reactorTickCounter;
-                    }
-
-                    if (result.timeToExplode == null && ratio >= 1) {
-                        result.timeToExplode = reactorTickCounter;
-                        break;
-                    }
-                }
-
-                if (isActive()) {
+                reactorTickCounter++;
+                result.simTime++;
+                if (active) {
                     result.activeTime++;
                 } else {
                     result.pausedTime++;
+                }
+
+                if (sampleReactor()) {
+                    break;
                 }
 
                 if (config.pulsed) {
@@ -402,12 +323,86 @@ public class Simulator implements AutoCloseable {
                     }
                 }
 
-                result.simTime++;
-
-                reactorTickCounter++;
             }
 
+            if (result.simTime == 0) {
+                result.minEUpT = 0;
+                result.minHUpS = 0;
+            }
             result.end = System.nanoTime();
+        }
+
+        private void tickComponents(boolean heatPhase) {
+            for (int row = 0; row < ROW_COUNT; row++) {
+                for (int col = 0; col < COL_COUNT; col++) {
+                    var component = getComponent(col, row);
+                    if (component == null) continue;
+                    int index = row * COL_COUNT + col;
+                    currentComponent = componentResults[index];
+                    component.setSimulationComponent(result, index);
+                    if (heatPhase) {
+                        component.onHeatTick();
+                    } else {
+                        component.onEnergyTick();
+                    }
+                }
+            }
+        }
+
+        private void sampleComponents() {
+            for (int index = 0; index < componentResults.length; index++) {
+                var component = getComponent(index % COL_COUNT, index / COL_COUNT);
+                var stats = componentResults[index];
+                int heat = component == null ? 0 : component.getStoredHeat();
+                stats.totalTempSecs += heat;
+                stats.minTemp = Math.min(stats.minTemp, heat);
+                stats.maxTemp = Math.max(stats.maxTemp, heat);
+
+                var compConfig = config.components[index];
+                if (compConfig == null) continue;
+                if ((compConfig.hasAutomation && heat > compConfig.replacementThreshold)
+                    || contents[index] != compConfig.stack) {
+                    stats.replaceCount++;
+                    setItem(index % COL_COUNT, index / COL_COUNT, compConfig.stack);
+                }
+            }
+        }
+
+        private boolean sampleReactor() {
+            int eupt = addedEU / 20;
+            result.minEUpT = Math.min(result.minEUpT, eupt);
+            result.maxEUpT = Math.max(result.maxEUpT, eupt);
+            result.minHUpS = Math.min(result.minHUpS, addedHU);
+            result.maxHUpS = Math.max(result.maxHUpS, addedHU);
+            result.minTemp = Math.min(result.minTemp, storedHeat);
+            result.maxTemp = Math.max(result.maxTemp, storedHeat);
+            result.totalTempSecs += storedHeat;
+
+            return recordTemperatureThresholds(result.simTime, true);
+        }
+
+        private boolean recordTemperatureThresholds(int time, boolean checkExplosion) {
+            double ratio = storedHeat / (double) getMaxHullHeat();
+            if (result.timeToEvaporate != null && result.timeToNormal == null && ratio < 0.5) {
+                result.timeToNormal = time;
+            }
+            if (result.timeToBurn == null && ratio >= 0.4) {
+                result.timeToBurn = time;
+            }
+            if (result.timeToEvaporate == null && ratio >= 0.5) {
+                result.timeToEvaporate = time;
+            }
+            if (result.timeToHurt == null && ratio >= 0.7) {
+                result.timeToHurt = time;
+            }
+            if (result.timeToLava == null && ratio >= 0.85) {
+                result.timeToLava = time;
+            }
+            if (checkExplosion && ratio >= 1) {
+                result.timeToExplode = time;
+                return true;
+            }
+            return false;
         }
     }
 }

@@ -116,6 +116,10 @@ public class FuelRodAdapter implements IComponentAdapter {
 
         reactor.addEU(energy);
         fuelRod.applyDamage(itemStack, 1);
+
+        if (fuelRod.getRemainingHealth(itemStack) <= 0) {
+            reactor.setItem(x, y, ItemStack.copyItemStack(fuelRod.getProduct(itemStack)));
+        }
     }
 
     @Override

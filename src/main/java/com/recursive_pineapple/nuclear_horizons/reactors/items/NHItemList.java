@@ -40,8 +40,8 @@ public enum NHItemList {
     RSH_CONDENSATOR(new BasicHeatAbsorberItem("rshCondensator", "reactorCondensator", 20_000, false)),
     LZH_CONDENSATOR(new BasicHeatAbsorberItem("lzhCondensator", "reactorCondensatorLap", 100_000, false)),
 
-    NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("neutronReflector", "reactorReflector", 30_000)),
-    THICK_NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("thickNeutronReflector", "reactorReflectorThick", 120_000)),
+    NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("neutronReflector", "reactorReflector", 10_000)),
+    THICK_NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("thickNeutronReflector", "reactorReflectorThick", 40_000)),
 
     REACTOR_PLATING(new BasicReactorPlatingItem("reactorPlating", "reactorPlating", 0.95, 1000)),
     REACTOR_PLATING_HEAT(new BasicReactorPlatingItem("reactorPlatingHeat", "reactorPlatingHeat", 0.99, 1700)),
