@@ -1,1 +1,1 @@
-code review found that simulator components carry ItemStack state, but the protobuf layout could not retain their NBT. add a stackNbt field and regenerate the Java class so configuration saves can preserve it
+a catalog audit found missing NH parts and GT lithium, MOX and quadruple Excited Plutonium. register them with stable IDs and return copied stacks so simulations do not mutate catalog templates. retain ID 71 as an alias for existing saved layouts
