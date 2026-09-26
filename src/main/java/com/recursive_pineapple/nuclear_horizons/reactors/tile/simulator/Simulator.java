@@ -86,6 +86,7 @@ public class Simulator implements AutoCloseable {
         public boolean suspended;
         public int addedEU;
         public Integer nextUnpause;
+        private double fractionalEU;
         private int heatTickHullCapacity = -1;
 
         public SimulationConfig config;
@@ -247,10 +248,18 @@ public class Simulator implements AutoCloseable {
         @Override
         public void addEU(double eu) {
             if (!isFluid()) {
-                int output = (int) (eu * Config.REACTOR_EU_MULTIPLIER);
-                result.totalEU += output;
-                currentComponent.totalEUOutput += output;
-                addedEU += output;
+                double generated = eu * Config.REACTOR_EU_MULTIPLIER;
+
+                double reactorOutput = generated + fractionalEU;
+                int wholeReactorEU = (int) reactorOutput;
+                fractionalEU = reactorOutput - wholeReactorEU;
+                result.totalEU += wholeReactorEU;
+                addedEU += wholeReactorEU;
+
+                double componentOutput = generated + currentComponent.fractionalEUOutput;
+                int wholeComponentEU = (int) componentOutput;
+                currentComponent.fractionalEUOutput = componentOutput - wholeComponentEU;
+                currentComponent.totalEUOutput += wholeComponentEU;
             }
         }
 
@@ -261,6 +270,7 @@ public class Simulator implements AutoCloseable {
 
         public void run() {
             this.reactorTickCounter = 0;
+            this.fractionalEU = 0;
 
             Arrays.fill(components, null);
             Arrays.fill(contents, null);

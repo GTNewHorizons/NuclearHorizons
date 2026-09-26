@@ -101,8 +101,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     int voltage = 0;
     int maxStoredEU = 4_194_304; // 2 ^ 22
-    int storedEU = 0;
-    int addedEU = 0;
+    double storedEU = 0;
+    double addedEU = 0;
 
     private Integer hullHeatCache = null;
     private int heatTickHullCapacity = -1;
@@ -131,7 +131,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         final int cols = getColumnCount();
 
         IntSyncValue storedHeatSync = new IntSyncValue(() -> this.storedHeat);
-        IntSyncValue addedEUSync = new IntSyncValue(() -> this.addedEU);
+        IntSyncValue addedEUSync = new IntSyncValue(() -> (int) this.addedEU);
         IntSyncValue addedHeatSync = new IntSyncValue(() -> this.addedHeat);
         BooleanSyncValue isFluidSync = new BooleanSyncValue(() -> this.isFluid);
         syncManager.syncValue("storedHeat", storedHeatSync);
@@ -266,7 +266,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         compound.setInteger("heat", this.storedHeat);
         compound.setInteger("roundedHeat", this.roundedHeat);
-        compound.setInteger("storedEU", this.storedEU);
+        compound.setDouble("storedEU", this.storedEU);
         compound.setInteger("tickCooldown", this.tickCounter);
         compound.setBoolean("isActive", this.isActive);
 
@@ -297,7 +297,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
             case 1 -> {
                 this.storedHeat = compound.getInteger("heat");
                 this.roundedHeat = compound.getInteger("roundedHeat");
-                this.storedEU = compound.getInteger("storedEU");
+                this.storedEU = compound.getDouble("storedEU");
                 this.tickCounter = compound.getInteger("tickCooldown");
                 this.isActive = compound.getBoolean("isActive");
 
@@ -449,12 +449,12 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         data.setInteger("chambers", chambers.size());
         data.setBoolean("isActive", isActive);
-        data.setInteger("storedEU", storedEU);
+        data.setDouble("storedEU", storedEU);
         data.setInteger("storedHeat", storedHeat);
         data.setDouble("heatRatio", heatRatio);
         data.setInteger("roundedHeat", roundedHeat);
         data.setInteger("addedHeat", addedHeat);
-        data.setInteger("addedEU", addedEU);
+        data.setDouble("addedEU", addedEU);
         data.setBoolean("isFluid", isFluid);
         data.setTag("coolantTank", coolantTank.writeToNBT(new NBTTagCompound()));
         data.setTag("hotCoolantTank", hotCoolantTank.writeToNBT(new NBTTagCompound()));
@@ -468,12 +468,12 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         this.chamberCount = data.getInteger("chambers");
         this.isActive = data.getBoolean("isActive");
-        this.storedEU = data.getInteger("storedEU");
+        this.storedEU = data.getDouble("storedEU");
         this.storedHeat = data.getInteger("storedHeat");
         this.heatRatio = data.getDouble("heatRatio");
         this.roundedHeat = data.getInteger("roundedHeat");
         this.addedHeat = data.getInteger("addedHeat");
-        this.addedEU = data.getInteger("addedEU");
+        this.addedEU = data.getDouble("addedEU");
         this.isFluid = data.getBoolean("isFluid");
         this.coolantTank.readFromNBT(data.getCompoundTag("coolantTank"));
         this.hotCoolantTank.readFromNBT(data.getCompoundTag("hotCoolantTank"));
@@ -511,7 +511,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     private void emitEnergy() {
         if (this.voltage == 0) this.voltage = 32;
 
-        int availableAmps = this.storedEU / this.voltage;
+        int availableAmps = (int) (this.storedEU / this.voltage);
 
         if (availableAmps > 0) {
             int consumedAmps = emitEnergyToNetwork(this.voltage, availableAmps, this);
@@ -752,7 +752,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         }
 
         if (this.addedEU > 0) {
-            int perTick = this.addedEU / 20;
+            int perTick = (int) (this.addedEU / 20);
 
             int voltageTier = GTUtility.getTier(perTick);
 
@@ -904,8 +904,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         } else {
             info.add(String.format("Stored Hot Coolant: §eEmpty§r"));
         }
-        info.add(String.format("§rStored Energy: §a%,d§r EU / §e%,d§r EU", storedEU, maxStoredEU));
-        info.add(String.format("§rEnergy Generation Rate: §e%,d§r EU/t", addedEU / 20));
+        info.add(String.format("§rStored Energy: §a%,d§r EU / §e%,d§r EU", (int) storedEU, maxStoredEU));
+        info.add(String.format("§rEnergy Generation Rate: §e%,d§r EU/t", (int) (addedEU / 20)));
         info.add(
             String.format("§rMax Out: §c%,d EU/t (%s)§r at §c1§r A", voltage, GTValues.VN[GTUtility.getTier(voltage)]));
 
@@ -1099,8 +1099,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     @Override
     public void addEU(double eu) {
         if (!isFluid) {
-            this.storedEU += (int) (eu * Config.REACTOR_EU_MULTIPLIER);
-            this.addedEU += (int) (eu * Config.REACTOR_EU_MULTIPLIER);
+            this.storedEU += eu * Config.REACTOR_EU_MULTIPLIER;
+            this.addedEU += eu * Config.REACTOR_EU_MULTIPLIER;
         }
     }
 

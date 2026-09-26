@@ -23,6 +23,8 @@ public class SimulationComponentResult {
 
     public CustomResult[] customResults;
 
+    double fractionalEUOutput;
+
     // spotless:on
 
     public static class CustomResult {
