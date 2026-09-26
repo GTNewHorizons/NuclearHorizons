@@ -25,7 +25,8 @@ public class BasicHeatAbsorberItem extends ReactorItem implements IHeatContainer
 
     @Override
     public int getStoredHeat(@Nonnull ItemStack itemStack) {
-        return 0;
+        // Condensator damage is spent absorption capacity, not heat available for cooling.
+        return consumable ? IHeatContainer.super.getStoredHeat(itemStack) : 0;
     }
 
     public void setProduct(ItemStack product) {

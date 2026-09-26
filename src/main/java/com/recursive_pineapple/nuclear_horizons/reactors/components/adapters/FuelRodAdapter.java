@@ -53,7 +53,7 @@ public class FuelRodAdapter implements IComponentAdapter {
     protected double getHeatMultiplier() {
         double mult = Config.ROD_HU_MULTIPLIER;
 
-        if (fuelRod.isMox(itemStack) && reactor.isFluid() && reactor.getHeatRatio() >= 0.5) {
+        if (fuelRod.isMox(itemStack) && reactor.isFluid() && reactor.getHeatRatio() > 0.5) {
             mult *= fuelRod.getMoxHeatCoefficient(itemStack);
         }
 
