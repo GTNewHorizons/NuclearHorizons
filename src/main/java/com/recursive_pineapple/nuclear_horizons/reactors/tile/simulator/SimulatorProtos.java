@@ -1558,6 +1558,13 @@ public final class SimulatorProtos {
          * @return The reactorPause.
          */
         int getReactorPause();
+
+        /**
+         * <code>bytes stackNbt = 7;</code>
+         *
+         * @return The stackNbt.
+         */
+        com.google.protobuf.ByteString getStackNbt();
     }
 
     /**
@@ -1583,7 +1590,9 @@ public final class SimulatorProtos {
             super(builder);
         }
 
-        private ComponentConfig() {}
+        private ComponentConfig() {
+            stackNbt_ = com.google.protobuf.ByteString.EMPTY;
+        }
 
         public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
             return com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulatorProtos.internal_static_ComponentConfig_descriptor;
@@ -1675,6 +1684,19 @@ public final class SimulatorProtos {
             return reactorPause_;
         }
 
+        public static final int STACKNBT_FIELD_NUMBER = 7;
+        private com.google.protobuf.ByteString stackNbt_ = com.google.protobuf.ByteString.EMPTY;
+
+        /**
+         * <code>bytes stackNbt = 7;</code>
+         *
+         * @return The stackNbt.
+         */
+        @java.lang.Override
+        public com.google.protobuf.ByteString getStackNbt() {
+            return stackNbt_;
+        }
+
         private byte memoizedIsInitialized = -1;
 
         @java.lang.Override
@@ -1707,6 +1729,9 @@ public final class SimulatorProtos {
             if (reactorPause_ != 0) {
                 output.writeInt32(6, reactorPause_);
             }
+            if (!stackNbt_.isEmpty()) {
+                output.writeBytes(7, stackNbt_);
+            }
             getUnknownFields().writeTo(output);
         }
 
@@ -1734,6 +1759,9 @@ public final class SimulatorProtos {
             if (reactorPause_ != 0) {
                 size += com.google.protobuf.CodedOutputStream.computeInt32Size(6, reactorPause_);
             }
+            if (!stackNbt_.isEmpty()) {
+                size += com.google.protobuf.CodedOutputStream.computeBytesSize(7, stackNbt_);
+            }
             size += getUnknownFields().getSerializedSize();
             memoizedSize = size;
             return size;
@@ -1755,6 +1783,7 @@ public final class SimulatorProtos {
             if (getInitialHeat() != other.getInitialHeat()) return false;
             if (getReplacementThreshold() != other.getReplacementThreshold()) return false;
             if (getReactorPause() != other.getReactorPause()) return false;
+            if (!getStackNbt().equals(other.getStackNbt())) return false;
             if (!getUnknownFields().equals(other.getUnknownFields())) return false;
             return true;
         }
@@ -1778,6 +1807,8 @@ public final class SimulatorProtos {
             hash = (53 * hash) + getReplacementThreshold();
             hash = (37 * hash) + REACTORPAUSE_FIELD_NUMBER;
             hash = (53 * hash) + getReactorPause();
+            hash = (37 * hash) + STACKNBT_FIELD_NUMBER;
+            hash = (53 * hash) + getStackNbt().hashCode();
             hash = (29 * hash) + getUnknownFields().hashCode();
             memoizedHashCode = hash;
             return hash;
@@ -1915,6 +1946,7 @@ public final class SimulatorProtos {
                 initialHeat_ = 0;
                 replacementThreshold_ = 0;
                 reactorPause_ = 0;
+                stackNbt_ = com.google.protobuf.ByteString.EMPTY;
                 return this;
             }
 
@@ -1970,6 +2002,9 @@ public final class SimulatorProtos {
                 if (((from_bitField0_ & 0x00000020) != 0)) {
                     result.reactorPause_ = reactorPause_;
                 }
+                if (((from_bitField0_ & 0x00000040) != 0)) {
+                    result.stackNbt_ = stackNbt_;
+                }
             }
 
             @java.lang.Override
@@ -2006,6 +2041,9 @@ public final class SimulatorProtos {
                 }
                 if (other.getReactorPause() != 0) {
                     setReactorPause(other.getReactorPause());
+                }
+                if (other.getStackNbt() != com.google.protobuf.ByteString.EMPTY) {
+                    setStackNbt(other.getStackNbt());
                 }
                 this.mergeUnknownFields(other.getUnknownFields());
                 onChanged();
@@ -2061,6 +2099,11 @@ public final class SimulatorProtos {
                                 bitField0_ |= 0x00000020;
                                 break;
                             } // case 48
+                            case 58: {
+                                stackNbt_ = input.readBytes();
+                                bitField0_ |= 0x00000040;
+                                break;
+                            } // case 58
                             default: {
                                 if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                                     done = true; // was an endgroup tag
@@ -2303,6 +2346,46 @@ public final class SimulatorProtos {
             public Builder clearReactorPause() {
                 bitField0_ = (bitField0_ & ~0x00000020);
                 reactorPause_ = 0;
+                onChanged();
+                return this;
+            }
+
+            private com.google.protobuf.ByteString stackNbt_ = com.google.protobuf.ByteString.EMPTY;
+
+            /**
+             * <code>bytes stackNbt = 7;</code>
+             *
+             * @return The stackNbt.
+             */
+            @java.lang.Override
+            public com.google.protobuf.ByteString getStackNbt() {
+                return stackNbt_;
+            }
+
+            /**
+             * <code>bytes stackNbt = 7;</code>
+             *
+             * @param value The stackNbt to set.
+             * @return This builder for chaining.
+             */
+            public Builder setStackNbt(com.google.protobuf.ByteString value) {
+                if (value == null) {
+                    throw new NullPointerException();
+                }
+                stackNbt_ = value;
+                bitField0_ |= 0x00000040;
+                onChanged();
+                return this;
+            }
+
+            /**
+             * <code>bytes stackNbt = 7;</code>
+             *
+             * @return This builder for chaining.
+             */
+            public Builder clearStackNbt() {
+                bitField0_ = (bitField0_ & ~0x00000040);
+                stackNbt_ = getDefaultInstance().getStackNbt();
                 onChanged();
                 return this;
             }
@@ -7227,36 +7310,37 @@ public final class SimulatorProtos {
                 + "\022\017\n\007onPulse\030\005 \001(\005\022\020\n\010offPulse\030\006 \001(\005\022\023\n\013s"
                 + "uspendTemp\030\007 \001(\005\022\022\n\nresumeTemp\030\010 \001(\005\022\032\n\022"
                 + "maxSimulationTicks\030\t \001(\005\022$\n\ncomponents\030\n"
-                + " \003(\0132\020.ComponentConfig\"\216\001\n\017ComponentConf"
+                + " \003(\0132\020.ComponentConfig\"\240\001\n\017ComponentConf"
                 + "ig\022\r\n\005index\030\001 \001(\005\022\014\n\004item\030\002 \001(\005\022\025\n\rhasAu"
                 + "tomation\030\003 \001(\010\022\023\n\013initialHeat\030\004 \001(\005\022\034\n\024r"
                 + "eplacementThreshold\030\005 \001(\005\022\024\n\014reactorPaus"
-                + "e\030\006 \001(\005\"\344\004\n\020SimulationResult\022\r\n\005start\030\001 "
-                + "\001(\003\022\013\n\003end\030\002 \001(\003\022\017\n\007totalEU\030\003 \001(\003\022\017\n\007min"
-                + "EUpT\030\004 \001(\005\022\017\n\007maxEUpT\030\005 \001(\005\022\017\n\007totalHU\030\006"
-                + " \001(\003\022\017\n\007minHUpS\030\007 \001(\005\022\017\n\007maxHUpS\030\010 \001(\005\022\025"
-                + "\n\rtotalTempSecs\030\t \001(\003\022\017\n\007minTemp\030\n \001(\005\022\017"
-                + "\n\007maxTemp\030\013 \001(\005\022\030\n\020totalHullHeating\030\014 \001("
-                + "\003\022\030\n\020totalHullCooling\030\r \001(\003\022\017\n\007simTime\030\016"
-                + " \001(\005\022\022\n\nactiveTime\030\017 \001(\005\022\022\n\npausedTime\030\020"
-                + " \001(\005\022\031\n\014timeToNormal\030\021 \001(\005H\000\210\001\001\022\027\n\ntimeT"
-                + "oBurn\030\022 \001(\005H\001\210\001\001\022\034\n\017timeToEvaporate\030\023 \001("
-                + "\005H\002\210\001\001\022\027\n\ntimeToHurt\030\024 \001(\005H\003\210\001\001\022\027\n\ntimeT"
-                + "oLava\030\025 \001(\005H\004\210\001\001\022\032\n\rtimeToExplode\030\026 \001(\005H"
-                + "\005\210\001\001\022$\n\ncomponents\030\027 \003(\0132\020.ComponentResu"
-                + "ltB\017\n\r_timeToNormalB\r\n\013_timeToBurnB\022\n\020_t"
-                + "imeToEvaporateB\r\n\013_timeToHurtB\r\n\013_timeTo"
-                + "LavaB\020\n\016_timeToExplode\"\323\001\n\017ComponentResu"
-                + "lt\022\r\n\005index\030\001 \001(\005\022\027\n\017totalAirHeating\030\002 \001"
-                + "(\003\022\030\n\020totalHullHeating\030\003 \001(\003\022\030\n\020totalHul"
-                + "lCooling\030\004 \001(\003\022\025\n\rtotalTempSecs\030\005 \001(\003\022\017\n"
-                + "\007minTemp\030\006 \001(\005\022\017\n\007maxTemp\030\007 \001(\005\022\024\n\014repla"
-                + "ceCount\030\010 \001(\005\022\025\n\rtotalEUOutput\030\t \001(\003\"k\n\014"
-                + "CustomResult\022\014\n\004i18n\030\001 \001(\t\022\025\n\013float_valu"
-                + "e\030\002 \001(\002H\000\022\024\n\nlong_value\030\003 \001(\003H\000\022\026\n\014strin"
-                + "g_value\030\004 \001(\tH\000B\010\n\006ValuesBS\n@com.recursi"
-                + "ve_pineapple.nuclear_horizons.reactors.t"
-                + "ile.simulatorB\017SimulatorProtosb\006proto3" };
+                + "e\030\006 \001(\005\022\020\n\010stackNbt\030\007 \001(\014\"\344\004\n\020Simulation"
+                + "Result\022\r\n\005start\030\001 \001(\003\022\013\n\003end\030\002 \001(\003\022\017\n\007to"
+                + "talEU\030\003 \001(\003\022\017\n\007minEUpT\030\004 \001(\005\022\017\n\007maxEUpT\030"
+                + "\005 \001(\005\022\017\n\007totalHU\030\006 \001(\003\022\017\n\007minHUpS\030\007 \001(\005\022"
+                + "\017\n\007maxHUpS\030\010 \001(\005\022\025\n\rtotalTempSecs\030\t \001(\003\022"
+                + "\017\n\007minTemp\030\n \001(\005\022\017\n\007maxTemp\030\013 \001(\005\022\030\n\020tot"
+                + "alHullHeating\030\014 \001(\003\022\030\n\020totalHullCooling\030"
+                + "\r \001(\003\022\017\n\007simTime\030\016 \001(\005\022\022\n\nactiveTime\030\017 \001"
+                + "(\005\022\022\n\npausedTime\030\020 \001(\005\022\031\n\014timeToNormal\030\021"
+                + " \001(\005H\000\210\001\001\022\027\n\ntimeToBurn\030\022 \001(\005H\001\210\001\001\022\034\n\017ti"
+                + "meToEvaporate\030\023 \001(\005H\002\210\001\001\022\027\n\ntimeToHurt\030\024"
+                + " \001(\005H\003\210\001\001\022\027\n\ntimeToLava\030\025 \001(\005H\004\210\001\001\022\032\n\rti"
+                + "meToExplode\030\026 \001(\005H\005\210\001\001\022$\n\ncomponents\030\027 \003"
+                + "(\0132\020.ComponentResultB\017\n\r_timeToNormalB\r\n"
+                + "\013_timeToBurnB\022\n\020_timeToEvaporateB\r\n\013_tim"
+                + "eToHurtB\r\n\013_timeToLavaB\020\n\016_timeToExplode"
+                + "\"\323\001\n\017ComponentResult\022\r\n\005index\030\001 \001(\005\022\027\n\017t"
+                + "otalAirHeating\030\002 \001(\003\022\030\n\020totalHullHeating"
+                + "\030\003 \001(\003\022\030\n\020totalHullCooling\030\004 \001(\003\022\025\n\rtota"
+                + "lTempSecs\030\005 \001(\003\022\017\n\007minTemp\030\006 \001(\005\022\017\n\007maxT"
+                + "emp\030\007 \001(\005\022\024\n\014replaceCount\030\010 \001(\005\022\025\n\rtotal"
+                + "EUOutput\030\t \001(\003\"k\n\014CustomResult\022\014\n\004i18n\030\001"
+                + " \001(\t\022\025\n\013float_value\030\002 \001(\002H\000\022\024\n\nlong_valu"
+                + "e\030\003 \001(\003H\000\022\026\n\014string_value\030\004 \001(\tH\000B\010\n\006Val"
+                + "uesBS\n@com.recursive_pineapple.nuclear_h"
+                + "orizons.reactors.tile.simulatorB\017Simulat"
+                + "orProtosb\006proto3" };
         descriptor = com.google.protobuf.Descriptors.FileDescriptor
             .internalBuildGeneratedFileFrom(descriptorData, new com.google.protobuf.Descriptors.FileDescriptor[] {});
         internal_static_SimulationConfig_descriptor = getDescriptor().getMessageTypes()
@@ -7270,7 +7354,7 @@ public final class SimulatorProtos {
         internal_static_ComponentConfig_fieldAccessorTable = new com.google.protobuf.GeneratedMessage.FieldAccessorTable(
             internal_static_ComponentConfig_descriptor,
             new java.lang.String[] { "Index", "Item", "HasAutomation", "InitialHeat", "ReplacementThreshold",
-                "ReactorPause", });
+                "ReactorPause", "StackNbt", });
         internal_static_SimulationResult_descriptor = getDescriptor().getMessageTypes()
             .get(2);
         internal_static_SimulationResult_fieldAccessorTable = new com.google.protobuf.GeneratedMessage.FieldAccessorTable(

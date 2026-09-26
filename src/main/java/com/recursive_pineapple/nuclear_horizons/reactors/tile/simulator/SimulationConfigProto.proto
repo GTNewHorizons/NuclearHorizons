@@ -23,6 +23,7 @@ message ComponentConfig {
   int32 initialHeat = 4;
   int32 replacementThreshold = 5;
   int32 reactorPause = 6;
+  bytes stackNbt = 7;
 }
 
 message SimulationResult {
