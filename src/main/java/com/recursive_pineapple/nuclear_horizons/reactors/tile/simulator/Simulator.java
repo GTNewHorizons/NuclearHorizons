@@ -86,6 +86,7 @@ public class Simulator implements AutoCloseable {
         public boolean suspended;
         public int addedEU;
         public Integer nextUnpause;
+        private int heatTickHullCapacity = -1;
 
         public SimulationConfig config;
 
@@ -195,6 +196,10 @@ public class Simulator implements AutoCloseable {
 
         @Override
         public int getMaxHullHeat() {
+            if (heatTickHullCapacity >= 0) {
+                return heatTickHullCapacity;
+            }
+
             int maxHeat = Config.REACTOR_BASE_HEAT;
 
             for (int row = 0; row < ROW_COUNT; row++) {
@@ -323,19 +328,27 @@ public class Simulator implements AutoCloseable {
         }
 
         private void tickComponents(boolean heatPhase) {
-            for (int row = 0; row < ROW_COUNT; row++) {
-                for (int col = 0; col < COL_COUNT; col++) {
-                    var component = getComponent(col, row);
-                    if (component == null) continue;
-                    int index = row * COL_COUNT + col;
-                    currentComponent = componentResults[index];
-                    component.setSimulationComponent(result, index);
-                    if (heatPhase) {
-                        component.onHeatTick();
-                    } else {
-                        component.onEnergyTick();
+            if (heatPhase) {
+                heatTickHullCapacity = Config.REACTOR_BASE_HEAT;
+            }
+            try {
+                for (int row = 0; row < ROW_COUNT; row++) {
+                    for (int col = 0; col < COL_COUNT; col++) {
+                        var component = getComponent(col, row);
+                        if (component == null) continue;
+                        int index = row * COL_COUNT + col;
+                        currentComponent = componentResults[index];
+                        component.setSimulationComponent(result, index);
+                        if (heatPhase) {
+                            heatTickHullCapacity += component.getReactorMaxHeatIncrease();
+                            component.onHeatTick();
+                        } else {
+                            component.onEnergyTick();
+                        }
                     }
                 }
+            } finally {
+                heatTickHullCapacity = -1;
             }
         }
 

@@ -105,6 +105,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     int addedEU = 0;
 
     private Integer hullHeatCache = null;
+    private int heatTickHullCapacity = -1;
 
     Coolant coolantCache;
     FluidTank coolantTank = new FluidTank(10_000);
@@ -703,13 +704,19 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         // components change
         resetHullHeatCache();
 
-        for (int row = 0; row < ROW_COUNT; row++) {
-            for (int col = 0; col < COL_COUNT; col++) {
-                var component = getComponent(col, row);
-                if (component != null) {
-                    component.onHeatTick();
+        heatTickHullCapacity = Config.REACTOR_BASE_HEAT;
+        try {
+            for (int row = 0; row < ROW_COUNT; row++) {
+                for (int col = 0; col < COL_COUNT; col++) {
+                    var component = getComponent(col, row);
+                    if (component != null) {
+                        heatTickHullCapacity += component.getReactorMaxHeatIncrease();
+                        component.onHeatTick();
+                    }
                 }
             }
+        } finally {
+            heatTickHullCapacity = -1;
         }
 
         for (var reactorBlock : reactorBlocks) {
@@ -992,6 +999,10 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public int getMaxHullHeat() {
+        if (heatTickHullCapacity >= 0) {
+            return heatTickHullCapacity;
+        }
+
         if (hullHeatCache != null) {
             return hullHeatCache;
         }
