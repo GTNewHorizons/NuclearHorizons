@@ -342,6 +342,7 @@ public class SimulationConfig implements IItemHandlerModifiable {
         this.pulsed = source.pulsed;
         this.automated = source.automated;
         this.fluid = source.fluid;
+        this.usingReactorCoolantInjectors = source.usingReactorCoolantInjectors;
         this.initialHeat = source.initialHeat;
         this.onPulse = source.onPulse;
         this.offPulse = source.offPulse;
@@ -357,7 +358,7 @@ public class SimulationConfig implements IItemHandlerModifiable {
             if (c != null) {
                 var dest = new SimComponentConfig();
 
-                dest.stack = c.stack;
+                dest.stack = ItemStack.copyItemStack(c.stack);
                 dest.hasAutomation = c.hasAutomation;
                 dest.initialHeat = c.initialHeat;
                 dest.replacementThreshold = c.replacementThreshold;

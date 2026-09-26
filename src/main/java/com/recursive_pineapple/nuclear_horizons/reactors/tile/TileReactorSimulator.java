@@ -6,13 +6,17 @@ import static com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactor
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,6 +47,8 @@ import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
+import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher;
+import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher.ReactorSimulationFinishedMessage;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationConfig;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationResult;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.Simulator;
@@ -73,9 +79,60 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     @Override
     public void updateEntity() {
-        if (worldObj != null && worldObj.isRemote) {
-            if (simulator == null) simulator = new Simulator(this);
-            simulator.pollFinished();
+        if (!isInvalid() && worldObj != null && worldObj.isRemote && simulator != null) {
+            pollSimulation();
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void pollSimulation() {
+        try {
+            SimulationResult result = simulator.pollFinished();
+            if (result == null) return;
+
+            var msg = new ReactorSimulationFinishedMessage();
+            msg.dimensionId = worldObj.provider.dimensionId;
+            msg.x = xCoord;
+            msg.y = yCoord;
+            msg.z = zCoord;
+            msg.result = result;
+            PacketDispatcher.DISPATCHER.sendToServer(msg);
+
+            NuclearHorizons.LOG.info("Simulation finished after {}s", result.duration());
+            Minecraft.getMinecraft().ingameGUI.getChatGUI()
+                .printChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.GRAY.toString() + EnumChatFormatting.ITALIC.toString()
+                            + String.format("Reactor simulation finished after %.3f seconds.", result.duration())));
+        } catch (InterruptedException e) {
+            Thread.currentThread()
+                .interrupt();
+        } catch (ExecutionException e) {
+            NuclearHorizons.LOG.warn("Simulation did not finish", e);
+            Minecraft.getMinecraft().ingameGUI.getChatGUI()
+                .printChatMessage(
+                    new ChatComponentText(
+                        EnumChatFormatting.RED + "Simulation crashed, check the client logs for more details."));
+        }
+    }
+
+    @Override
+    public void invalidate() {
+        if (worldObj != null && worldObj.isRemote) closeSimulator();
+        super.invalidate();
+    }
+
+    @Override
+    public void onChunkUnload() {
+        if (worldObj != null && worldObj.isRemote) closeSimulator();
+        super.onChunkUnload();
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void closeSimulator() {
+        if (simulator != null) {
+            simulator.close();
+            simulator = null;
         }
     }
 
@@ -84,13 +141,12 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
         config.result = result;
 
-        if (result != null) result.config = config;
-
         if (worldObj != null) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
     }
 
     public void setConfigCode(String code) {
         if (!Objects.equals(code, this.configCode)) {
+            if (worldObj != null && worldObj.isRemote && simulator != null) simulator.cancel();
             this.configCode = code;
             this.config.put(SimulationConfig.fromCode(code));
 
@@ -100,6 +156,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
     }
 
     public void onConfigChanged() {
+        if (worldObj != null && worldObj.isRemote && simulator != null) simulator.cancel();
         var code = this.config.getCode();
 
         if (!Objects.equals(code, configCode)) {
@@ -249,9 +306,15 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                         new ButtonWidget<>().size(48, 16)
                             .overlay(IKey.lang("nh_gui.sim.actions.start"))
                             .onMousePressed(mb -> {
-                                if (NetworkUtils.isClient()) {
-                                    if (simulator == null) simulator = new Simulator(this);
+                                if (NetworkUtils.isClient() && !isInvalid()) {
+                                    if (simulator == null) simulator = new Simulator();
                                     simulator.start(config);
+                                    Minecraft.getMinecraft().ingameGUI.getChatGUI()
+                                        .printChatMessage(
+                                            new ChatComponentText(
+                                                EnumChatFormatting.GRAY.toString()
+                                                    + EnumChatFormatting.ITALIC.toString()
+                                                    + "Started reactor simulation."));
                                 }
                                 return true;
                             }))

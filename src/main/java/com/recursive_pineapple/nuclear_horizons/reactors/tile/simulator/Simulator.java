@@ -6,46 +6,33 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
 
-import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
-import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher;
-import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher.ReactorSimulationFinishedMessage;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.ComponentRegistry;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IComponentAdapter;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
-import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorSimulator;
 
-public class Simulator {
+/**
+ * Owns one background simulation. Call start, cancel, pollFinished and close from the client thread.
+ */
+public class Simulator implements AutoCloseable {
 
-    private final TileReactorSimulator parent;
-    private final ExecutorService thread_pool = Executors.newFixedThreadPool(1);
-
+    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
     private Future<SimulationResult> simulation;
-
-    public Simulator(TileReactorSimulator parent) {
-        this.parent = parent;
-    }
 
     public boolean isRunning() {
         return simulation != null && !simulation.isDone();
     }
 
     public void start(SimulationConfig config) {
-        if (simulation != null) {
-            simulation.cancel(true);
-        }
-
-        simulation = thread_pool.submit(() -> runSimulation(config));
+        cancel();
+        SimulationConfig snapshot = new SimulationConfig();
+        snapshot.put(config);
+        simulation = threadPool.submit(() -> runSimulation(snapshot));
     }
 
     public void cancel() {
@@ -55,63 +42,34 @@ public class Simulator {
         }
     }
 
+    @Override
+    public void close() {
+        cancel();
+        threadPool.shutdownNow();
+    }
+
     private SimulationResult runSimulation(SimulationConfig config) {
         SimulatedReactor reactor = new SimulatedReactor();
-        reactor.config = config;
-
-        Minecraft.getMinecraft().ingameGUI.getChatGUI()
-            .printChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY.toString() + EnumChatFormatting.ITALIC.toString()
-                        + "Started reactor simulation."));
-
+        // Components mutate their working stacks. Keep the original input for the result.
+        reactor.config = new SimulationConfig();
+        reactor.config.put(config);
         reactor.run();
-
-        Minecraft.getMinecraft().ingameGUI.getChatGUI()
-            .printChatMessage(
-                new ChatComponentText(
-                    EnumChatFormatting.GRAY.toString() + EnumChatFormatting.ITALIC.toString()
-                        + "Reactor simulation finished after "
-                        + String.format("%.3f seconds.", reactor.result.duration())));
-
         reactor.result.config = config;
         return reactor.result;
     }
 
-    public void pollFinished() {
-        if (simulation != null && simulation.isDone()) {
-            try {
-                var result = simulation.get(0l, TimeUnit.NANOSECONDS);
-                simulation = null;
+    @Nullable
+    public SimulationResult pollFinished() throws InterruptedException, ExecutionException {
+        if (simulation == null || !simulation.isDone()) {
+            return null;
+        }
 
-                var msg = new ReactorSimulationFinishedMessage();
-
-                msg.dimensionId = parent.getWorldObj().provider.dimensionId;
-                msg.x = parent.xCoord;
-                msg.y = parent.yCoord;
-                msg.z = parent.zCoord;
-                msg.result = result;
-
-                NuclearHorizons.LOG.info(
-                    String.format(
-                        "Simulation finished after %.3fs (%.3fns per tick)",
-                        result.duration(),
-                        (result.duration() * 1e9d / result.simTime)));
-                PacketDispatcher.DISPATCHER.sendToServer(msg);
-            } catch (InterruptedException | CancellationException | ExecutionException e) {
-                NuclearHorizons.LOG.warn("Simulation did not finish", e);
-                Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                    .printChatMessage(
-                        new ChatComponentText(
-                            EnumChatFormatting.RED + "Simulation crashed, check the server logs for more details. ("
-                                + e.getClass()
-                                    .getName()
-                                + ")"));
-
-                simulation = null;
-            } catch (TimeoutException e) {
-                // do nothing
-            }
+        Future<SimulationResult> finished = simulation;
+        simulation = null;
+        try {
+            return finished.get();
+        } catch (CancellationException e) {
+            return null;
         }
     }
 
@@ -291,7 +249,7 @@ public class Simulator {
             Arrays.fill(contents, null);
 
             for (int i = 0; i < components.length; i++) {
-                contents[i] = config.getStackInSlot(i);
+                contents[i] = config.components[i] == null ? null : config.components[i].stack;
                 componentResults[i] = new SimulationComponentResult();
 
                 var comp = getComponent(i % COL_COUNT, i / COL_COUNT);
@@ -306,6 +264,11 @@ public class Simulator {
             this.storedHeat = config.initialHeat;
 
             while (reactorTickCounter < config.maxSimulationTicks) {
+                if (Thread.currentThread()
+                    .isInterrupted()) {
+                    throw new CancellationException();
+                }
+
                 if (reactorTickCounter % 2 == 0) {
                     this.addedEU = 0;
                 } else {
