@@ -54,8 +54,8 @@ public class Simulator implements AutoCloseable {
         // Components mutate their working stacks. Keep the original input for the result.
         reactor.config = new SimulationConfig();
         reactor.config.put(config);
-        reactor.run();
         reactor.result.config = config;
+        reactor.run();
         return reactor.result;
     }
 
@@ -82,8 +82,8 @@ public class Simulator implements AutoCloseable {
         public ItemStack[] contents = new ItemStack[COL_COUNT * ROW_COUNT];
         public IComponentAdapter[] components = new IComponentAdapter[COL_COUNT * ROW_COUNT];
 
-        public int reactorTickCounter = 0, storedHeat, addedHU, pulseCounter;
-        public boolean pulseActive, suspended;
+        public int reactorTickCounter = 0, storedHeat, addedHU;
+        public boolean suspended;
         public int addedEU;
         public Integer nextUnpause;
 
@@ -179,7 +179,10 @@ public class Simulator implements AutoCloseable {
             }
 
             if (config.pulsed) {
-                return pulseActive;
+                if (config.offPulse <= 0) return true;
+                if (config.onPulse <= 0) return false;
+                long period = (long) config.onPulse + config.offPulse;
+                return reactorTickCounter % period < config.onPulse;
             }
 
             return true;
@@ -263,13 +266,12 @@ public class Simulator implements AutoCloseable {
 
                 var comp = getComponent(i % COL_COUNT, i / COL_COUNT);
                 if (comp != null) {
-                    comp.addHeat(config.components[i].initialHeat);
+                    comp.addHeat(config.components[i].initialHeat - comp.getStoredHeat());
                 }
             }
 
             result.componentResults = componentResults;
 
-            this.pulseActive = true;
             this.storedHeat = config.initialHeat;
             result.minTemp = storedHeat;
             result.maxTemp = storedHeat;
@@ -289,6 +291,9 @@ public class Simulator implements AutoCloseable {
 
                 this.addedEU = 0;
                 this.addedHU = 0;
+                if (config.pulsed) {
+                    suspended = suspended ? storedHeat > config.resumeTemp : storedHeat >= config.suspendTemp;
+                }
                 boolean active = isActive();
 
                 tickComponents(true);
@@ -306,22 +311,7 @@ public class Simulator implements AutoCloseable {
                 if (sampleReactor()) {
                     break;
                 }
-
-                if (config.pulsed) {
-                    pulseCounter++;
-
-                    if (pulseActive) {
-                        if (pulseCounter >= config.onPulse) {
-                            pulseActive = false;
-                            pulseCounter -= config.onPulse;
-                        }
-                    } else {
-                        if (pulseCounter >= config.offPulse) {
-                            pulseActive = true;
-                            pulseCounter -= config.offPulse;
-                        }
-                    }
-                }
+                replaceComponents();
 
             }
 
@@ -358,12 +348,30 @@ public class Simulator implements AutoCloseable {
                 stats.minTemp = Math.min(stats.minTemp, heat);
                 stats.maxTemp = Math.max(stats.maxTemp, heat);
 
+            }
+        }
+
+        private void replaceComponents() {
+            if (!config.automated) return;
+            for (int index = 0; index < components.length; index++) {
                 var compConfig = config.components[index];
                 if (compConfig == null) continue;
-                if ((compConfig.hasAutomation && heat > compConfig.replacementThreshold)
-                    || contents[index] != compConfig.stack) {
-                    stats.replaceCount++;
-                    setItem(index % COL_COUNT, index / COL_COUNT, compConfig.stack);
+                var component = getComponent(index % COL_COUNT, index / COL_COUNT);
+                boolean overThreshold = compConfig.hasAutomation && component != null
+                    && component.getStoredHeat() > compConfig.replacementThreshold;
+                if (!overThreshold && contents[index] == compConfig.stack) continue;
+
+                componentResults[index].replaceCount++;
+                compConfig.stack = ItemStack.copyItemStack(result.config.components[index].stack);
+                setItem(index % COL_COUNT, index / COL_COUNT, compConfig.stack);
+                var replacement = getComponent(index % COL_COUNT, index / COL_COUNT);
+                if (replacement != null) {
+                    currentComponent = componentResults[index];
+                    replacement.addHeat(compConfig.initialHeat - replacement.getStoredHeat());
+                }
+                if (compConfig.hasAutomation && compConfig.reactorPause > 0) {
+                    int unpause = reactorTickCounter + compConfig.reactorPause;
+                    nextUnpause = nextUnpause == null ? unpause : Math.max(nextUnpause, unpause);
                 }
             }
         }

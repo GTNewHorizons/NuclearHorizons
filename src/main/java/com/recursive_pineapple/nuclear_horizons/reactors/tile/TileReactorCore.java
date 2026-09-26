@@ -994,7 +994,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
             return hullHeatCache;
         }
 
-        int maxHeat = 5000;
+        int maxHeat = Config.REACTOR_BASE_HEAT;
 
         for (int row = 0; row < ROW_COUNT; row++) {
             for (int col = 0; col < COL_COUNT; col++) {
@@ -1037,52 +1037,47 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public int addAirHeat(int airHeat) {
-        if (this.isFluid) {
-            if (this.coolantTank.getFluidAmount() == 0) {
-                return airHeat;
+        if (!this.isFluid) {
+            return 0;
+        }
+
+        if (this.coolantTank.getFluidAmount() == 0) {
+            coolantCache = null;
+        } else if (coolantCache == null || coolantCache.cold.getFluid() != this.coolantTank.getFluid()
+            .getFluid()) {
+                coolantCache = CoolantRegistry.getCoolantInfo(
+                    this.coolantTank.getFluid()
+                        .getFluid());
             }
 
-            // cache this because it will be called several times a second
-            if ((coolantCache == null || coolantCache.cold.getFluid() != this.coolantTank.getFluid()
-                .getFluid())) {
-                if (this.coolantTank.getFluidAmount() == 0) {
-                    coolantCache = null;
-                } else {
-                    coolantCache = CoolantRegistry.getCoolantInfo(
-                        this.coolantTank.getFluid()
-                            .getFluid());
-                }
-            }
+        if (coolantCache == null) {
+            addHullHeat(airHeat + roundedHeat / Config.FLUID_NUKE_HU_MULTIPLIER);
+            roundedHeat = 0;
+            return 0;
+        }
 
-            if (coolantCache == null) {
-                return airHeat;
-            }
+        hotCoolantTank.setCapacity(coolantCache.outputTankMult * 10_000);
 
-            this.roundedHeat += airHeat * Config.FLUID_NUKE_HU_MULTIPLIER;
+        int availableInputs = coolantTank.getFluidAmount() / coolantCache.cold.amount;
+        int availableOutputs = Math
+            .max(0, hotCoolantTank.fill(new FluidStack(coolantCache.hot, hotCoolantTank.getCapacity()), false))
+            / coolantCache.hot.amount;
+        int possibleConversions = Math.min(availableInputs, availableOutputs);
 
-            hotCoolantTank.setCapacity(this.coolantCache.outputTankMult * 10_000);
+        roundedHeat += airHeat * Config.FLUID_NUKE_HU_MULTIPLIER;
+        int conversions = Math.min(roundedHeat / coolantCache.specificHeatCapacity, possibleConversions);
+        int convertedHU = conversions * coolantCache.specificHeatCapacity;
+        roundedHeat -= convertedHU;
+        addedHeat += convertedHU;
 
-            int availableInputs = coolantTank.getFluidAmount() / this.coolantCache.cold.amount;
-            int availableOutputs = (hotCoolantTank.getCapacity() - hotCoolantTank.getFluidAmount())
-                / this.coolantCache.hot.amount;
+        if (conversions > 0) {
+            coolantTank.drain(conversions * coolantCache.cold.amount, true);
+            hotCoolantTank.fill(new FluidStack(coolantCache.hot, conversions * coolantCache.hot.amount), true);
+        }
 
-            int possibleConversions = Math.min(availableInputs, availableOutputs);
-
-            int possibleHU = possibleConversions * this.coolantCache.specificHeatCapacity;
-
-            int convertedHU = Math.min(
-                roundedHeat / this.coolantCache.specificHeatCapacity * this.coolantCache.specificHeatCapacity,
-                possibleHU);
-
-            this.roundedHeat -= convertedHU;
-            this.addedHeat += convertedHU;
-
-            int conversions = convertedHU / this.coolantCache.specificHeatCapacity;
-            int depletedCoolant = conversions * coolantCache.cold.amount;
-            int heatedCoolant = conversions * coolantCache.hot.amount;
-
-            this.coolantTank.drain(depletedCoolant, true);
-            this.hotCoolantTank.fill(new FluidStack(coolantCache.hot, heatedCoolant), true);
+        if (conversions == possibleConversions) {
+            addHullHeat(roundedHeat / Config.FLUID_NUKE_HU_MULTIPLIER);
+            roundedHeat = 0;
         }
 
         return 0;
