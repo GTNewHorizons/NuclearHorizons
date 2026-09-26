@@ -775,7 +775,6 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 var block = worldObj.getBlock(x, y, z);
 
                 if (block.isFlammable(worldObj, x, y, z, ForgeDirection.UNKNOWN)) {
-                    block.breakBlock(worldObj, x, y, z, block, worldObj.getBlockMetadata(x, y, z));
                     worldObj.setBlock(x, y, z, Blocks.fire, 0, 3);
                     break;
                 }
@@ -1232,8 +1231,29 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         STRUCTURE_DEFINITION
             .check(this, "eu", worldObj, ExtendedFacing.DEFAULT, xCoord, yCoord, zCoord, 1, 1, 1, false);
 
+        bindAdjacentThermalSensors(this);
+        for (TileReactorChamber chamber : chambers) {
+            bindAdjacentThermalSensors(chamber);
+        }
+
         dropExtraItems();
         worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+    }
+
+    private void bindAdjacentThermalSensors(TileEntity reactorPart) {
+        for (var direction : DirectionUtil.values()) {
+            if (direction.getTileEntity(
+                worldObj,
+                reactorPart.xCoord,
+                reactorPart.yCoord,
+                reactorPart.zCoord) instanceof TileThermalSensor sensor) {
+                TileReactorCore owner = sensor.getReactor();
+                if ((owner == null || owner == this) && !reactorBlocks.contains(sensor)) {
+                    reactorBlocks.add(sensor);
+                    sensor.setReactor(this);
+                }
+            }
+        }
     }
 
     @Override

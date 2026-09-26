@@ -196,7 +196,7 @@ public class ForeignItems {
 
         @Override
         public double getMoxEUCoefficient(@Nonnull ItemStack itemStack) {
-            return 1.5;
+            return item.sHeatBonus;
         }
 
         @Override
@@ -206,7 +206,7 @@ public class ForeignItems {
 
         @Override
         public double getHeatMult(@Nonnull ItemStack itemStack) {
-            return item.sHeat * 4;
+            return item.sHeat;
         }
 
         @Override
