@@ -20,6 +20,10 @@ public interface IComponentAdapter {
         return 0;
     }
 
+    public default int getMaxHeat() {
+        return 0;
+    }
+
     /**
      * @return The amount of heat rejected
      */

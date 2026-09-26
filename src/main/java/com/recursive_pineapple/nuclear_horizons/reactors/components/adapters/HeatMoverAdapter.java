@@ -52,6 +52,11 @@ public class HeatMoverAdapter implements IComponentAdapter {
     }
 
     @Override
+    public int getMaxHeat() {
+        return this.heatMover.getMaxHeat(itemStack);
+    }
+
+    @Override
     public int addHeat(int delta) {
         int rejected = this.heatMover.addHeat(itemStack, delta);
 

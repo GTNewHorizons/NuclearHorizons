@@ -47,6 +47,11 @@ public class HeatAbsorberAdapter implements IComponentAdapter {
     }
 
     @Override
+    public int getMaxHeat() {
+        return this.heatContainer.getMaxHeat(itemStack);
+    }
+
+    @Override
     public int addHeat(int delta) {
         int rejected = this.heatContainer.addHeat(itemStack, delta);
 
