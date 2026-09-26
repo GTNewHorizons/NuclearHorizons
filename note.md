@@ -1,1 +1,1 @@
-the simulator could save reactor and component settings that players could not edit. expose them in the GUI, with a clickable reactor layout for selecting components, a highlight for the selection and markers for enabled heat automation
+network-path review found that clients calculated results and sent them to the server-owned tile. the server now calculates and distributes results.

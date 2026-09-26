@@ -18,7 +18,7 @@ import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 
 /**
- * Owns one background simulation. Call start, cancel, pollFinished and close from the client thread.
+ * Owns one background simulation. Call start, cancel, pollFinished and close from the owning game thread.
  */
 public class Simulator implements AutoCloseable {
 

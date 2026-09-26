@@ -8,15 +8,13 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.EnumChatFormatting;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +31,6 @@ import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.TabTexture;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PosGuiData;
-import com.cleanroommc.modularui.network.NetworkUtils;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -51,25 +48,20 @@ import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
-import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher;
-import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher.ReactorSimulationFinishedMessage;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationConfig;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationResult;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.Simulator;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulatorProtos;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-
 public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGuiData> {
 
-    @SideOnly(Side.CLIENT)
     private Simulator simulator;
 
     @NotNull
     private String configCode = "";
     private String configError = "";
     private String plannerCode = "";
+    private String simulationStatus = "";
     private int selectedComponent;
 
     /**
@@ -86,56 +78,43 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     @Override
     public void updateEntity() {
-        if (!isInvalid() && worldObj != null && worldObj.isRemote && simulator != null) {
+        if (!isInvalid() && worldObj != null && !worldObj.isRemote && simulator != null) {
             pollSimulation();
         }
     }
 
-    @SideOnly(Side.CLIENT)
     private void pollSimulation() {
         try {
             SimulationResult result = simulator.pollFinished();
             if (result == null) return;
 
-            var msg = new ReactorSimulationFinishedMessage();
-            msg.dimensionId = worldObj.provider.dimensionId;
-            msg.x = xCoord;
-            msg.y = yCoord;
-            msg.z = zCoord;
-            msg.result = result;
-            PacketDispatcher.DISPATCHER.sendToServer(msg);
-
+            simulationStatus = "";
+            setSimulationResult(result);
             NuclearHorizons.LOG.info("Simulation finished after {}s", result.duration());
-            Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                .printChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.GRAY.toString() + EnumChatFormatting.ITALIC.toString()
-                            + String.format("Reactor simulation finished after %.3f seconds.", result.duration())));
         } catch (InterruptedException e) {
             Thread.currentThread()
                 .interrupt();
+            simulationStatus = "nh_gui.sim.status.failed";
+            setSimulationResult(null);
         } catch (ExecutionException e) {
             NuclearHorizons.LOG.warn("Simulation did not finish", e);
-            Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                .printChatMessage(
-                    new ChatComponentText(
-                        EnumChatFormatting.RED + "Simulation crashed, check the client logs for more details."));
+            simulationStatus = "nh_gui.sim.status.failed";
+            setSimulationResult(null);
         }
     }
 
     @Override
     public void invalidate() {
-        if (worldObj != null && worldObj.isRemote) closeSimulator();
+        closeSimulator();
         super.invalidate();
     }
 
     @Override
     public void onChunkUnload() {
-        if (worldObj != null && worldObj.isRemote) closeSimulator();
+        closeSimulator();
         super.onChunkUnload();
     }
 
-    @SideOnly(Side.CLIENT)
     private void closeSimulator() {
         if (simulator != null) {
             simulator.close();
@@ -143,12 +122,41 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
         }
     }
 
-    public void setSimulationResult(SimulationResult result) {
+    private void setSimulationResult(@Nullable SimulationResult result) {
         latestSimulation = result;
 
         config.result = result;
 
-        if (worldObj != null) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        if (worldObj != null && !worldObj.isRemote) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+    }
+
+    private void startSimulation() {
+        if (simulator == null) simulator = new Simulator();
+        simulationStatus = "nh_gui.sim.status.running";
+        setSimulationResult(null);
+        simulator.start(config);
+    }
+
+    private void cancelSimulation() {
+        if (simulator != null) {
+            simulator.cancel();
+            simulationStatus = "nh_gui.sim.status.cancelled";
+            if (worldObj != null && !worldObj.isRemote) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+        }
+    }
+
+    private void invalidateSimulation() {
+        if (simulator != null) simulator.cancel();
+        simulationStatus = "";
+        setSimulationResult(null);
+    }
+
+    private boolean canInteractWith(EntityPlayer player) {
+        return !isInvalid() && worldObj != null
+            && player.worldObj == worldObj
+            && player.getDistanceSq(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5) <= 64
+            && worldObj.blockExists(xCoord, yCoord, zCoord)
+            && worldObj.getTileEntity(xCoord, yCoord, zCoord) == this;
     }
 
     public void setConfigCode(String code) {
@@ -157,7 +165,12 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                 SimulationConfig parsed = SimulationConfig.fromCode(code);
                 this.config.put(parsed);
                 configError = "";
-                onConfigChanged();
+                if (worldObj != null && worldObj.isRemote) {
+                    this.configCode = code;
+                    this.plannerCode = "";
+                } else {
+                    onConfigChanged();
+                }
             } catch (IllegalArgumentException e) {
                 configError = e.getMessage();
                 NuclearHorizons.LOG.warn("Rejected reactor configuration: {}", configError);
@@ -166,15 +179,12 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
     }
 
     public void onConfigChanged() {
-        if (worldObj != null && worldObj.isRemote && simulator != null) simulator.cancel();
         var code = this.config.getCode();
 
         if (!Objects.equals(code, configCode)) {
+            invalidateSimulation();
             this.configCode = code;
-            this.latestSimulation = null;
-            this.config.result = null;
             this.plannerCode = "";
-            if (worldObj != null) worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
             markDirty();
         }
     }
@@ -190,7 +200,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                     .toByteArray());
         }
 
-        nbt.setString("code", configCode);
+        nbt.setString("simulationStatus", simulationStatus);
 
         return new S35PacketUpdateTileEntity(xCoord, yCoord, zCoord, blockMetadata, nbt);
     }
@@ -199,7 +209,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity pkt) {
         var nbt = pkt.func_148857_g();
 
-        setConfigCode(nbt.getString("code"));
+        simulationStatus = nbt.getString("simulationStatus");
 
         var data = nbt.getByteArray("history");
         if (data.length > 0) {
@@ -257,8 +267,22 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings settings) {
-        StringSyncValue codeSync = new StringSyncValue(() -> this.configCode, this::setConfigCode).allowC2S();
+        settings.canInteractWith(this::canInteractWith);
+        StringSyncValue codeSync = new StringSyncValue(() -> this.configCode, code -> {
+            if (syncManager.isClient() || (syncManager.getPlayer().openContainer == syncManager.getContainer()
+                && canInteractWith(syncManager.getPlayer()))) setConfigCode(code);
+        }).allowC2S();
         syncManager.syncValue("code", codeSync);
+        syncManager.onClientTick(() -> codeSync.detectAndSendChanges(false));
+        // Forge 1.7.10 dispatches these actions on the server thread through NetworkManager's receive queue.
+        syncManager.registerSyncedAction("start", false, true, buffer -> {
+            if (syncManager.getPlayer().openContainer == syncManager.getContainer()
+                && canInteractWith(syncManager.getPlayer())) startSimulation();
+        });
+        syncManager.registerSyncedAction("cancel", false, true, buffer -> {
+            if (syncManager.getPlayer().openContainer == syncManager.getContainer()
+                && canInteractWith(syncManager.getPlayer())) cancelSimulation();
+        });
 
         PagedWidget.Controller controller = new PagedWidget.Controller();
 
@@ -297,7 +321,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
             new PagedWidget<>().controller(controller)
                 .pos(0, 0)
                 .sizeRel(1f)
-                .addPage(gridPage())
+                .addPage(gridPage(syncManager, codeSync))
                 .addPage(resultsPage())
                 .addPage(settingsPage(codeSync))
                 .addPage(componentSettingsPage()));
@@ -305,7 +329,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
         return panel;
     }
 
-    private IWidget gridPage() {
+    private IWidget gridPage(PanelSyncManager syncManager, StringSyncValue codeSync) {
         char[] rowChars = new char[COL_COUNT];
         Arrays.fill(rowChars, 'I');
         String[] matrix = new String[ROW_COUNT];
@@ -325,7 +349,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                         index -> new PhantomItemSlot().slot(
                             new ModularSlot(this.config, index).changeListener(
                                 (stack, onlyAmountChanged, client, init) -> {
-                                    if (client && !init) onConfigChanged();
+                                    if (!init && !client) onConfigChanged();
                                 })))
                     .build())
             .child(
@@ -336,25 +360,15 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                         new ButtonWidget<>().size(48, 16)
                             .overlay(IKey.lang("nh_gui.sim.actions.start"))
                             .onMousePressed(mb -> {
-                                if (NetworkUtils.isClient() && !isInvalid()) {
-                                    if (simulator == null) simulator = new Simulator();
-                                    simulator.start(config);
-                                    Minecraft.getMinecraft().ingameGUI.getChatGUI()
-                                        .printChatMessage(
-                                            new ChatComponentText(
-                                                EnumChatFormatting.GRAY.toString()
-                                                    + EnumChatFormatting.ITALIC.toString()
-                                                    + "Started reactor simulation."));
-                                }
+                                codeSync.detectAndSendChanges(false);
+                                syncManager.callSyncedAction("start");
                                 return true;
                             }))
                     .child(
                         new ButtonWidget<>().size(48, 16)
                             .overlay(IKey.lang("nh_gui.sim.actions.cancel"))
                             .onMousePressed(mb -> {
-                                if (NetworkUtils.isClient() && simulator != null) {
-                                    simulator.cancel();
-                                }
+                                syncManager.callSyncedAction("cancel");
                                 return true;
                             })))
             .child(SlotGroupWidget.playerInventory(false));
@@ -380,7 +394,8 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
                 ArrayList<String> lines = new ArrayList<>();
 
                 if (r == null) {
-                    lines.add(I18n.format("nh_gui.sim.results.no_results"));
+                    lines.add(
+                        I18n.format(simulationStatus.isEmpty() ? "nh_gui.sim.results.no_results" : simulationStatus));
                 } else if (r.timeToExplode == null) {
                     addResultLine(lines, "runtime", "seconds", r.simTime);
                 }
@@ -631,12 +646,13 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
 
     private IWidget booleanSetting(String labelKey, java.util.function.BooleanSupplier getter,
         java.util.function.Consumer<Boolean> setter) {
-        String trueText = I18n.format("nh_gui.sim.settings.true"), falseText = I18n.format("nh_gui.sim.settings.false");
-
         return labeledRow(
             labelKey,
             new ButtonWidget<>().size(40, 14)
-                .overlay(IKey.dynamic(() -> getter.getAsBoolean() ? trueText : falseText))
+                .overlay(
+                    IKey.dynamic(
+                        () -> I18n
+                            .format(getter.getAsBoolean() ? "nh_gui.sim.settings.true" : "nh_gui.sim.settings.false")))
                 .onMousePressed(mb -> {
                     setter.accept(!getter.getAsBoolean());
                     onConfigChanged();
