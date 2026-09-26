@@ -413,11 +413,14 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     private boolean getEnableSignal(int x, int y, int z) {
         for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-            Block block = worldObj.getBlock(x + dir.offsetX, y + dir.offsetY, z + dir.offsetZ);
+            int neighbourX = x + dir.offsetX;
+            int neighbourY = y + dir.offsetY;
+            int neighbourZ = z + dir.offsetZ;
+            Block block = worldObj.getBlock(neighbourX, neighbourY, neighbourZ);
 
             if (block instanceof IReactorSensor) continue;
 
-            if (worldObj.getIndirectPowerLevelTo(x, y, z, dir.ordinal()) > 0) return true;
+            if (worldObj.getIndirectPowerLevelTo(neighbourX, neighbourY, neighbourZ, dir.ordinal()) > 0) return true;
         }
 
         return false;
