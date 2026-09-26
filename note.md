@@ -1,1 +1,1 @@
-A redstone block was correctly placed above NH, but the reactor stayed off because it queried power at its own coordinates. Reading the neighboring position made both reactors active in the next live run.
+A mixed live comparison found one HU in another component. Integer division leaves a remainder when fuel heats several neighbors, and code inspection traced it to NH's visit order. NH now sends the remainder to the same neighbor as the reference. The observed effect is small, though a component at a failure threshold could make it matter.

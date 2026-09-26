@@ -12,6 +12,9 @@ import com.recursive_pineapple.nuclear_horizons.reactors.items.interfaces.IBasic
 
 public class FuelRodAdapter implements IComponentAdapter {
 
+    private static final InventoryDirection[] HEAT_SINK_ORDER = { InventoryDirection.Left, InventoryDirection.Right,
+        InventoryDirection.Up, InventoryDirection.Down, };
+
     private final IReactorGrid reactor;
     private final int x, y;
     private final ItemStack itemStack;
@@ -157,7 +160,7 @@ public class FuelRodAdapter implements IComponentAdapter {
     private ArrayList<IComponentAdapter> getHeatableNeighbours() {
         ArrayList<IComponentAdapter> neighbours = new ArrayList<>();
 
-        for (var dir : InventoryDirection.values()) {
+        for (var dir : HEAT_SINK_ORDER) {
             int x2 = dir.offsetX(x);
             int y2 = dir.offsetY(y);
 
