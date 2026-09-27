@@ -1,1 +1,3 @@
-network-path review found that clients calculated results and sent them to the server-owned tile. the server now calculates and distributes results.
+Horizon-QA reproduced a completed server simulation whose result disappeared from the GUI during configuration sync. this scenario inserts fuel through inventory clicks, presses Start and checks that the result stays visible. it then changes the layout, checks that the old result is cleared, and reruns to verify the updated output
+
+the component settings scenario clicks the first and last grid slots, edits independent thresholds and pauses, checks empty-slot selection leaves the layout unchanged, and reopens the GUI to verify saved settings. screenshots show selection and automation markers, including disabling one marker while preserving the other
