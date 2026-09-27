@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -800,8 +801,9 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
                 var block = worldObj.getBlock(x, y, z);
 
-                if (block instanceof IFluidBlock fluidBlock && fluidBlock.getFluid()
-                    .getTemperature() < 375) {
+                if (block.getMaterial() == Material.water
+                    || block instanceof IFluidBlock fluidBlock && fluidBlock.getFluid()
+                        .getTemperature() < 375) {
                     worldObj.setBlock(x, y, z, Blocks.air, 0, 3);
                     // fire hiss
                     worldObj.playAuxSFX(1004, x, y, z, 0);

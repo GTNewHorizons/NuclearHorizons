@@ -38,7 +38,9 @@ public class HeatAbsorberAdapter implements IComponentAdapter {
 
     @Override
     public boolean containsHeat() {
-        return this.heatContainer.getMaxHeat(itemStack) > 0;
+        int maxHeat = this.heatContainer.getMaxHeat(itemStack);
+        return maxHeat > 0
+            && (this.heatContainer.isConsumable(itemStack) || this.heatContainer.getRemainingHealth(itemStack) > 0);
     }
 
     @Override
