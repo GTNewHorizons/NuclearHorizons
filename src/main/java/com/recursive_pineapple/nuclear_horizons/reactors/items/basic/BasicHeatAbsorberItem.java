@@ -25,7 +25,7 @@ public class BasicHeatAbsorberItem extends ReactorItem implements IHeatContainer
 
     @Override
     public int getStoredHeat(@Nonnull ItemStack itemStack) {
-        return 0;
+        return itemStack.getItemDamage();
     }
 
     public void setProduct(ItemStack product) {
