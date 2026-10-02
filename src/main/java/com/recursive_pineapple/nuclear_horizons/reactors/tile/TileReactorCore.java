@@ -763,6 +763,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     }
 
     private void doHeatDamage() {
+        if (Config.REACTOR_EXPLOSION_POWER_LIMIT <= 0) return;
+
         final int DAMAGE_RADIUS = 3;
 
         // flames
@@ -843,14 +845,9 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         // explosion
         if (heatRatio >= 1) {
-            worldObj.newExplosion(
-                null,
-                xCoord + 0.5,
-                yCoord + 0.5,
-                zCoord + 0.5,
-                (float) (30 * getExplosionRadiusMultiplier()),
-                true,
-                true);
+            double explosionPower = Math.min(30 * getExplosionRadiusMultiplier(), Config.REACTOR_EXPLOSION_POWER_LIMIT);
+
+            worldObj.newExplosion(null, xCoord + 0.5, yCoord + 0.5, zCoord + 0.5, (float) explosionPower, true, true);
         }
     }
 
@@ -994,7 +991,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
             return hullHeatCache;
         }
 
-        int maxHeat = 5000;
+        int maxHeat = Config.REACTOR_BASE_MAX_HEAT;
 
         for (int row = 0; row < ROW_COUNT; row++) {
             for (int col = 0; col < COL_COUNT; col++) {
