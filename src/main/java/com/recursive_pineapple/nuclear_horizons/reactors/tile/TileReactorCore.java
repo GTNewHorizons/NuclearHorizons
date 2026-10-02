@@ -90,6 +90,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     private IComponentAdapter[] components = new IComponentAdapter[ROW_COUNT * COL_COUNT];
 
     private int tickCounter = 0;
+    private int startupDelay = REACTOR_TICK_SPEED - 1;
 
     boolean isActive = false;
     boolean isFluid = false;
@@ -297,7 +298,6 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 this.storedHeat = compound.getInteger("heat");
                 this.roundedHeat = compound.getInteger("roundedHeat");
                 this.storedEU = compound.getInteger("storedEU");
-                this.tickCounter = compound.getInteger("tickCooldown");
                 this.isActive = compound.getBoolean("isActive");
 
                 this.isFluid = compound.getBoolean("isFluid");
@@ -333,6 +333,10 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 }
             }
         }
+
+        this.tickCounter = 0;
+        this.startupDelay = REACTOR_TICK_SPEED - 1;
+        this.checkStructureImmediately = true;
     }
 
     public void queueStructureCheck() {
@@ -350,6 +354,12 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 checkStructureImmediately = false;
 
                 doStructureCheck();
+            }
+
+            if (startupDelay > 0) {
+                startupDelay--;
+                this.emitEnergy();
+                return;
             }
 
             if (this.tickCounter % REACTOR_TICK_SPEED == 0) {

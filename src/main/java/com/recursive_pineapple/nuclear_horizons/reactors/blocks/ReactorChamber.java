@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -72,14 +71,12 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
     }
 
     private void onBlocksChanged(World worldIn, int x, int y, int z) {
+        if (worldIn.isRemote) return;
+
         if (getAttachedReactors(worldIn, x, y, z) != 1) {
+            worldIn.playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (worldIn.getBlockMetadata(x, y, z) << 12));
             worldIn.setBlock(x, y, z, Blocks.air);
             worldIn.spawnEntityInWorld(new EntityItem(worldIn, x + 0.5, y + 0.5, z + 0.5, new ItemStack(this, 1)));
-
-            var worldclient = Minecraft.getMinecraft().theWorld;
-
-            worldclient
-                .playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (worldclient.getBlockMetadata(x, y, z) << 12));
         } else {
             ((TileReactorChamber) worldIn.getTileEntity(x, y, z)).setReactor(null);
 
