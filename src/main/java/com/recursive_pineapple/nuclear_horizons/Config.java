@@ -22,8 +22,7 @@ public class Config {
     public static int BWR_STEAM_PER_HU_MULTIPLIER = 320;
     public static int COOLANT_SPECIFIC_HEAT = 1;
     public static int LEAD_SPECIFIC_HEAT = 8;
-    public static boolean ENABLE_MIGRATIONS = true;
-    public static boolean ENABLE_REACTOR_BLOCK_MIGRATION = false;
+    public static boolean ENABLE_MIGRATIONS = false;
     public static boolean LOG_MIGRATION_DETAILS = false;
 
     public static void synchronizeConfiguration(File configFile) {
@@ -60,16 +59,16 @@ public class Config {
             "Base reactor hull heat. IC2 default is 10000.")
             .getInt(10_000);
 
+        if (configuration.hasKey("migrations", "enableReactorBlockMigration")) {
+            configuration.getCategory("migrations").remove("enableReactorBlockMigration");
+        }
         ENABLE_MIGRATIONS = configuration.getBoolean(
             "enableMigrations",
             "migrations",
             false,
-            "Enable Postea item/NBT stack replacements for removed IC2 reactor content.");
-        ENABLE_REACTOR_BLOCK_MIGRATION = configuration.getBoolean(
-            "enableReactorBlockMigration",
-            "migrations",
-            false,
-            "Enable placed IC2 reactor/chamber tile migration. Only use on backed-up worlds.");
+            "Enable Postea migration of IC2 reactor items, placed blocks and tile entities. Only use on backed-up worlds.\n"
+                + "WARNING: Enable before first loading a world with this mod version. Postea caches processed chunks by mod versions.\n"
+                + "Enabling this later will not migrate already processed chunks until a mod version changes or their POSTEA chunk tags are cleared.");
         LOG_MIGRATION_DETAILS = configuration.getBoolean(
             "logMigrationDetails",
             "migrations",

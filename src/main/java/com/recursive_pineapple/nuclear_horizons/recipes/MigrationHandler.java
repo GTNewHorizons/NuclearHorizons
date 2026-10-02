@@ -38,10 +38,7 @@ public class MigrationHandler {
         if (!Config.ENABLE_MIGRATIONS) return;
 
         registerItemMigrations();
-
-        if (Config.ENABLE_REACTOR_BLOCK_MIGRATION) {
-            registerReactorBlockMigrations();
-        }
+        registerReactorBlockMigrations();
     }
 
     private static void registerItemMigrations() {
