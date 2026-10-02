@@ -16,6 +16,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
+import com.recursive_pineapple.nuclear_horizons.Config;
 import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
 import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher;
 import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher.ReactorSimulationFinishedMessage;
@@ -233,7 +234,7 @@ public class Simulator {
 
         @Override
         public int getMaxHullHeat() {
-            int maxHeat = 5000;
+            int maxHeat = Config.REACTOR_BASE_MAX_HEAT;
 
             for (int row = 0; row < ROW_COUNT; row++) {
                 for (int col = 0; col < COL_COUNT; col++) {
