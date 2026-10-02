@@ -22,6 +22,9 @@ public class Config {
     public static int BWR_STEAM_PER_HU_MULTIPLIER = 320;
     public static int COOLANT_SPECIFIC_HEAT = 1;
     public static int LEAD_SPECIFIC_HEAT = 8;
+    public static boolean ENABLE_MIGRATIONS = true;
+    public static boolean ENABLE_REACTOR_BLOCK_MIGRATION = false;
+    public static boolean LOG_MIGRATION_DETAILS = false;
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
@@ -57,6 +60,21 @@ public class Config {
             "Base reactor hull heat. IC2 default is 10000.")
             .getInt(10_000);
 
+        ENABLE_MIGRATIONS = configuration.getBoolean(
+            "enableMigrations",
+            "migrations",
+            false,
+            "Enable Postea item/NBT stack replacements for removed IC2 reactor content.");
+        ENABLE_REACTOR_BLOCK_MIGRATION = configuration.getBoolean(
+            "enableReactorBlockMigration",
+            "migrations",
+            false,
+            "Enable placed IC2 reactor/chamber tile migration. Only use on backed-up worlds.");
+        LOG_MIGRATION_DETAILS = configuration.getBoolean(
+            "logMigrationDetails",
+            "migrations",
+            false,
+            "Log detailed migration information for debugging.");
         // spotless:on
 
         if (configuration.hasChanged()) {

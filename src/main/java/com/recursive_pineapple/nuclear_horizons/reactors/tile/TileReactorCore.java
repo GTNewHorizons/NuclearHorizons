@@ -26,9 +26,11 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.FluidContainerRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.IFluidBlock;
+import net.minecraftforge.fluids.IFluidContainerItem;
 
 import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -82,11 +84,13 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     public static final int ROW_COUNT = 6;
     public static final int COL_COUNT = 9;
+    public static final int FLUID_ITEM_SLOT_COUNT = 4;
 
     private static final int REACTOR_TICK_SPEED = 20;
     private static final int REACTOR_STRUCTURE_CHECK_PERIOD = 10 * 20;
 
     private ItemStack[] contents = new ItemStack[ROW_COUNT * COL_COUNT];
+    private ItemStack[] fluidItems = new ItemStack[FLUID_ITEM_SLOT_COUNT];
     private IComponentAdapter[] components = new IComponentAdapter[ROW_COUNT * COL_COUNT];
 
     private int tickCounter = 0;
@@ -173,13 +177,25 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                     .size(18, 108));
         }
 
+        int fluidItemStart = cols * ROW_COUNT;
+
         if (this.isFluid) {
-            reactorRow.child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.coolantTank)));
+            reactorRow.child(
+                Flow.column()
+                    .coverChildren()
+                    .child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.coolantTank)))
+                    .child(new ItemSlot().slot(SyncHandlers.itemSlot(inv, fluidItemStart)))
+                    .child(new ItemSlot().slot(SyncHandlers.itemSlot(inv, fluidItemStart + 2))));
         }
         reactorRow.child(gridRow);
 
         if (this.isFluid) {
-            reactorRow.child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.hotCoolantTank)));
+            reactorRow.child(
+                Flow.column()
+                    .coverChildren()
+                    .child(new FluidSlot().syncHandler(new FluidSlotSyncHandler(this.hotCoolantTank)))
+                    .child(new ItemSlot().slot(SyncHandlers.itemSlot(inv, fluidItemStart + 1)))
+                    .child(new ItemSlot().slot(SyncHandlers.itemSlot(inv, fluidItemStart + 3))));
         }
 
         ModularPanel panel = ModularPanel.defaultPanel("reactor_core", 212, 234);
@@ -256,6 +272,15 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 worldObj.spawnEntityInWorld(new EntityItem(worldObj, this.xCoord, this.yCoord, this.zCoord, item));
             }
         }
+
+        for (int i = 0; i < fluidItems.length; i++) {
+            var item = fluidItems[i];
+            fluidItems[i] = null;
+
+            if (item == null) continue;
+
+            worldObj.spawnEntityInWorld(new EntityItem(worldObj, this.xCoord, this.yCoord, this.zCoord, item));
+        }
     }
 
     @Override
@@ -285,6 +310,18 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         }
 
         compound.setTag("grid", grid);
+
+        NBTTagCompound fluidSlots = new NBTTagCompound();
+
+        for (int i = 0; i < fluidItems.length; i++) {
+            ItemStack item = fluidItems[i];
+
+            if (item != null) {
+                fluidSlots.setTag(Integer.toString(i), item.writeToNBT(new NBTTagCompound()));
+            }
+        }
+
+        compound.setTag("fluidItems", fluidSlots);
     }
 
     @Override
@@ -319,6 +356,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 var grid = compound.getCompoundTag("grid");
 
                 Arrays.fill(this.contents, null);
+                Arrays.fill(this.fluidItems, null);
                 Arrays.fill(this.components, null);
 
                 for (int i = 0; i < contents.length; i++) {
@@ -328,6 +366,19 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
                         if (contents[i].getItem() == null) {
                             contents[i] = null;
+                        }
+                    }
+                }
+
+                var fluidSlots = compound.getCompoundTag("fluidItems");
+
+                for (int i = 0; i < fluidItems.length; i++) {
+                    if (fluidSlots.hasKey(Integer.toString(i))) {
+                        fluidItems[i] = new ItemStack(Blocks.air);
+                        fluidItems[i].readFromNBT(fluidSlots.getCompoundTag(Integer.toString(i)));
+
+                        if (fluidItems[i].getItem() == null) {
+                            fluidItems[i] = null;
                         }
                     }
                 }
@@ -397,6 +448,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                     isActive = anyActive && !anyInhibiting;
                 }
 
+                this.processFluidItemSlots();
                 this.doHeatTick();
                 this.doEUTick();
 
@@ -578,6 +630,107 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         this.components[index] = null;
     }
 
+    private int getGridInventorySize() {
+        return this.getColumnCount() * ROW_COUNT;
+    }
+
+    private int getFluidItemSlot(int index) {
+        if (!this.isFluid) return -1;
+        return index - getGridInventorySize();
+    }
+
+    private void processFluidItemSlots() {
+        if (!this.isFluid) return;
+
+        drainColdCoolantContainer();
+        fillHotCoolantContainer();
+    }
+
+    private void drainColdCoolantContainer() {
+        ItemStack input = this.fluidItems[0];
+        if (input == null) return;
+
+        FluidStack fluid = GTUtility.getFluidForFilledItem(input, true);
+        if (fluid == null || !CoolantRegistry.isColdCoolant(fluid.getFluid())) return;
+
+        if (this.coolantTank.fill(fluid, false) < fluid.amount) return;
+
+        ItemStack emptyContainer = GTUtility.getContainerForFilledItem(input, true);
+        if (emptyContainer != null && !canAddFluidItem(2, emptyContainer)) return;
+
+        this.coolantTank.fill(fluid, true);
+        consumeFluidItem(0);
+        addFluidItem(2, emptyContainer);
+        this.markDirty();
+    }
+
+    private void fillHotCoolantContainer() {
+        ItemStack input = this.fluidItems[1];
+        FluidStack hotCoolant = this.hotCoolantTank.getFluid();
+        if (input == null || hotCoolant == null || hotCoolant.amount <= 0) return;
+
+        ItemStack emptyContainer = input.copy();
+        emptyContainer.stackSize = 1;
+        ItemStack fullContainer = GTUtility.fillFluidContainer(hotCoolant.copy(), emptyContainer, false, true);
+        if (fullContainer == null || !canAddFluidItem(3, fullContainer)) return;
+
+        FluidStack filledFluid = GTUtility.getFluidForFilledItem(fullContainer, true);
+        if (filledFluid == null || !CoolantRegistry.isHotCoolant(filledFluid.getFluid())
+            || this.hotCoolantTank.getFluidAmount() < filledFluid.amount) {
+            return;
+        }
+
+        this.hotCoolantTank.drain(filledFluid.amount, true);
+        consumeFluidItem(1);
+        addFluidItem(3, fullContainer);
+        this.markDirty();
+    }
+
+    private void consumeFluidItem(int slot) {
+        this.fluidItems[slot].stackSize--;
+        if (this.fluidItems[slot].stackSize <= 0) {
+            this.fluidItems[slot] = null;
+        }
+    }
+
+    private boolean canAddFluidItem(int slot, ItemStack stack) {
+        if (stack == null) return true;
+
+        ItemStack existing = this.fluidItems[slot];
+        if (existing == null) return true;
+
+        return canMerge(existing, stack) && existing.stackSize + stack.stackSize
+            <= Math.min(existing.getMaxStackSize(), this.getInventoryStackLimit());
+    }
+
+    private void addFluidItem(int slot, ItemStack stack) {
+        if (stack == null) return;
+
+        if (this.fluidItems[slot] == null) {
+            this.fluidItems[slot] = stack.copy();
+        } else {
+            this.fluidItems[slot].stackSize += stack.stackSize;
+        }
+    }
+
+    private boolean canMerge(ItemStack a, ItemStack b) {
+        return a.getItem() == b.getItem() && a.getItemDamage() == b.getItemDamage()
+            && ItemStack.areItemStackTagsEqual(a, b);
+    }
+
+    private boolean isColdCoolantContainer(ItemStack stack) {
+        FluidStack fluid = GTUtility.getFluidForFilledItem(stack, true);
+        return fluid != null && CoolantRegistry.isColdCoolant(fluid.getFluid());
+    }
+
+    private boolean isEmptyFluidContainer(ItemStack stack) {
+        if (stack == null) return false;
+        if (stack.getItem() instanceof IFluidContainerItem container) {
+            return container.getCapacity(stack) > 0 && container.getFluid(stack) == null;
+        }
+        return FluidContainerRegistry.isEmptyContainer(stack);
+    }
+
     private int transformSlotIndex(int invSlot) {
         int cols = this.getColumnCount();
 
@@ -589,11 +742,18 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public int getSizeInventory() {
-        return this.getColumnCount() * ROW_COUNT;
+        return getGridInventorySize() + (this.isFluid ? FLUID_ITEM_SLOT_COUNT : 0);
     }
 
     @Override
     public ItemStack getStackInSlot(int index) {
+        int fluidItemSlot = getFluidItemSlot(index);
+        if (fluidItemSlot >= 0 && fluidItemSlot < FLUID_ITEM_SLOT_COUNT) {
+            return this.fluidItems[fluidItemSlot];
+        }
+
+        if (index < 0 || index >= getGridInventorySize()) return null;
+
         index = transformSlotIndex(index);
 
         return this.contents[index];
@@ -601,6 +761,26 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public ItemStack decrStackSize(int index, int count) {
+        int fluidItemSlot = getFluidItemSlot(index);
+        if (fluidItemSlot >= 0 && fluidItemSlot < FLUID_ITEM_SLOT_COUNT) {
+            var item = this.fluidItems[fluidItemSlot];
+
+            if (item == null) return null;
+
+            this.markDirty();
+
+            int consumed = Math.min(item.stackSize, count);
+            var out = item.splitStack(consumed);
+
+            if (item.stackSize <= 0) {
+                this.fluidItems[fluidItemSlot] = null;
+            }
+
+            return out;
+        }
+
+        if (index < 0 || index >= getGridInventorySize()) return null;
+
         index = transformSlotIndex(index);
 
         var item = this.contents[index];
@@ -626,6 +806,20 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public ItemStack getStackInSlotOnClosing(int index) {
+        int fluidItemSlot = getFluidItemSlot(index);
+        if (fluidItemSlot >= 0 && fluidItemSlot < FLUID_ITEM_SLOT_COUNT) {
+            var item = this.fluidItems[fluidItemSlot];
+
+            if (item == null) return null;
+
+            this.fluidItems[fluidItemSlot] = null;
+            this.markDirty();
+
+            return item;
+        }
+
+        if (index < 0 || index >= getGridInventorySize()) return null;
+
         index = transformSlotIndex(index);
 
         var item = this.contents[index];
@@ -644,6 +838,24 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public void setInventorySlotContents(int index, ItemStack stack) {
+        int fluidItemSlot = getFluidItemSlot(index);
+        if (fluidItemSlot >= 0 && fluidItemSlot < FLUID_ITEM_SLOT_COUNT) {
+            if (stack != null && stack.stackSize <= 0) {
+                stack = null;
+            }
+
+            this.fluidItems[fluidItemSlot] = stack;
+
+            if (stack != null && stack.stackSize > this.getInventoryStackLimit()) {
+                stack.stackSize = this.getInventoryStackLimit();
+            }
+
+            this.markDirty();
+            return;
+        }
+
+        if (index < 0 || index >= getGridInventorySize()) return;
+
         index = transformSlotIndex(index);
 
         if (stack != null && stack.stackSize <= 0) {
@@ -692,6 +904,14 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public boolean isItemValidForSlot(int index, ItemStack stack) {
+        int fluidItemSlot = getFluidItemSlot(index);
+        if (fluidItemSlot >= 0 && fluidItemSlot < FLUID_ITEM_SLOT_COUNT) {
+            return (fluidItemSlot == 0 && isColdCoolantContainer(stack)
+                || fluidItemSlot == 1 && isEmptyFluidContainer(stack));
+        }
+
+        if (index < 0 || index >= getGridInventorySize()) return false;
+
         return ComponentRegistry.isReactorItem(stack);
     }
 

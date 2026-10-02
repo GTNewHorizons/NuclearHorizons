@@ -12,6 +12,7 @@ import com.recursive_pineapple.nuclear_horizons.recipes.ComponentRecipes;
 import com.recursive_pineapple.nuclear_horizons.recipes.CoolantRecipes;
 import com.recursive_pineapple.nuclear_horizons.recipes.FuelProcessingRecipes;
 import com.recursive_pineapple.nuclear_horizons.recipes.FuelRodRecipes;
+import com.recursive_pineapple.nuclear_horizons.recipes.MigrationHandler;
 import com.recursive_pineapple.nuclear_horizons.recipes.MiscRecipes;
 import com.recursive_pineapple.nuclear_horizons.recipes.ReprocessingRecipes;
 import com.recursive_pineapple.nuclear_horizons.utils.NHStructureChannels;
@@ -55,6 +56,7 @@ public class CommonProxy {
 
         SimulationItems.registerSimulationItems();
         ForeignItems.registerForeignReactorItems();
+        MigrationHandler.postInit();
 
         ReprocessingRecipes.registerRecipes();
         FuelProcessingRecipes.registerRecipes();
