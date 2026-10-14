@@ -1,1 +1,3 @@
-the README lists missing total vent cooling in simulation results. add ideal capacity for the initial layout alongside measured cooling, including idle vents at 0 HU/s. fix the measured rate's unit from HU to HU/s and include the ideal value in result synchronization
+Horizon-QA reproduced an invalid item click on an occupied simulator slot erasing its saved thresholds and pause. ModularUI's validation temporarily cleared and restored the item, which recreated its component settings. validate items and slot limits without clearing the component
+
+the GUI code test also found that Export to ERP computed a code while its text field stayed empty. use a local dynamic value for the client-side export instead of a cached server sync value

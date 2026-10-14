@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import com.cleanroommc.modularui.api.GuiAxis;
 import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.value.IStringValue;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.ColorType;
 import com.cleanroommc.modularui.drawable.DynamicDrawable;
@@ -35,6 +37,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.IntValue;
+import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -344,13 +347,22 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
             .child(
                 SlotGroupWidget.builder()
                     .matrix(matrix)
-                    .key(
-                        'I',
-                        index -> new PhantomItemSlot().slot(
-                            new ModularSlot(this.config, index).changeListener(
-                                (stack, onlyAmountChanged, client, init) -> {
-                                    if (!init && !client) onConfigChanged();
-                                })))
+                    .key('I', index -> new PhantomItemSlot().slot(new ModularSlot(this.config, index) {
+
+                        // MUI's simulated insertion clears the slot and loses its component settings.
+                        @Override
+                        public boolean isItemValid(@Nullable ItemStack stack) {
+                            return isCanPut() && stack != null
+                                && getFilter().test(stack)
+                                && config.isItemValid(index, stack);
+                        }
+
+                        @Override
+                        public int getItemStackLimit(@NotNull ItemStack stack) {
+                            return isItemValid(stack) ? getSlotStackLimit() : 0;
+                        }
+                    }.changeListener(
+                        (stack, onlyAmountChanged, client, init) -> { if (!init && !client) onConfigChanged(); })))
                     .build())
             .child(
                 Flow.row()
@@ -495,7 +507,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
             .child(
                 textSetting(
                     "nh_gui.sim.settings.planner_code",
-                    new StringSyncValue(() -> plannerCode, value -> plannerCode = value)))
+                    new StringValue.Dynamic(() -> plannerCode, value -> plannerCode = value)))
             .child(new TextWidget<>(IKey.dynamic(() -> configError)).widthRel(1f));
     }
 
@@ -621,7 +633,7 @@ public class TileReactorSimulator extends TileEntity implements IGuiHolder<PosGu
             .child(control);
     }
 
-    private IWidget textSetting(String labelKey, StringSyncValue value) {
+    private IWidget textSetting(String labelKey, IStringValue<?> value) {
         return labeledRow(
             labelKey,
             new TextFieldWidget().value(value)

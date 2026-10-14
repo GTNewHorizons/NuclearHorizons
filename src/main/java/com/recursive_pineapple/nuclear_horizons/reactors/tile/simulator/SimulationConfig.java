@@ -446,9 +446,7 @@ public class SimulationConfig implements IItemHandlerModifiable {
     @Override
     @Nullable
     public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-        if (components[slot] != null || stack == null
-            || !ComponentRegistry.isReactorItem(stack)
-            || SimulationItems.getSimulationItemId(stack) == null) {
+        if (components[slot] != null || !isItemValid(slot, stack)) {
             return stack;
         }
 
@@ -464,6 +462,13 @@ public class SimulationConfig implements IItemHandlerModifiable {
         } else {
             return result;
         }
+    }
+
+    @Override
+    public boolean isItemValid(int slot, @Nullable ItemStack stack) {
+        return stack != null && stack.stackSize > 0
+            && ComponentRegistry.isReactorItem(stack)
+            && SimulationItems.getSimulationItemId(stack) != null;
     }
 
     @Override
