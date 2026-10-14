@@ -1,1 +1,0 @@
-remove explicit screenshot captures from the HQA scenarios. their assertions already check reactor state and simulator GUI behavior. keep those checks and remove the fluid reactor's render wait, which existed only for its screenshot
