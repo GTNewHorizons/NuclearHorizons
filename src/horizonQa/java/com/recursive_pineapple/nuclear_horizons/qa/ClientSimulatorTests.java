@@ -74,7 +74,6 @@ public final class ClientSimulatorTests {
                     "first simulator slot",
                     w -> w instanceof PhantomItemSlot slot && slot.getSlot()
                         .getSlotIndex() == 0))
-            .capture("simulator-grid-one-rod")
             .click(
                 widget(
                     "Start button",
@@ -86,14 +85,12 @@ public final class ClientSimulatorTests {
                 String text = resultText(c.screen(GuiContainerWrapper.class));
                 if (!text.contains("Avg Power: 10 EU/t")) throw new AssertionError("Visible results: " + text);
             })
-            .capture("simulator-start-result")
             .click(widget("Grid tab", w -> w instanceof PageButton page && page.getIndex() == 0))
             .click(
                 widget(
                     "second simulator slot",
                     w -> w instanceof PhantomItemSlot slot && slot.getSlot()
                         .getSlotIndex() == 1))
-            .capture("simulator-grid-two-rods")
             .click(widget("Results tab", w -> w instanceof PageButton page && page.getIndex() == 1))
             .awaitClient("changing the grid clears the previous result", c -> {
                 String text = resultText(c.screen(GuiContainerWrapper.class));
@@ -112,7 +109,6 @@ public final class ClientSimulatorTests {
                 String text = resultText(c.screen(GuiContainerWrapper.class));
                 if (!text.contains("Avg Power: 40 EU/t")) throw new AssertionError("Visible results: " + text);
             })
-            .capture("simulator-updated-result")
             .succeed();
     }
 
@@ -159,27 +155,23 @@ public final class ClientSimulatorTests {
             .click(settingControl("nh_gui.sim.comp_settings.automated"));
         enterNumber(scenario, "nh_gui.sim.comp_settings.threshold", "111");
         enterNumber(scenario, "nh_gui.sim.comp_settings.pause", "7");
-        scenario.capture("component-first-automated")
-            .click(componentSlot(53))
+        scenario.click(componentSlot(53))
             .awaitClient(
                 "last slot settings start independently",
                 c -> assertField(c, "nh_gui.sim.comp_settings.threshold", "0"))
             .click(settingControl("nh_gui.sim.comp_settings.automated"));
         enterNumber(scenario, "nh_gui.sim.comp_settings.threshold", "222");
         enterNumber(scenario, "nh_gui.sim.comp_settings.pause", "13");
-        scenario.capture("component-two-automation-markers")
-            .click(componentSlot(1))
+        scenario.click(componentSlot(1))
             .awaitClient("empty slot is selected without inserting the held rod", c -> {
                 if (!resultText(c.screen(GuiContainerWrapper.class)).contains("Select an occupied slot"))
                     throw new AssertionError("Expected the empty-slot message");
             })
-            .capture("component-empty-selection")
             .click(componentSlot(0))
             .awaitClient(
                 "first slot retains its settings",
                 c -> assertField(c, "nh_gui.sim.comp_settings.threshold", "111"))
             .click(settingControl("nh_gui.sim.comp_settings.automated"))
-            .capture("component-first-marker-disabled")
             .awaitServer("slot settings synchronize independently", () -> assertComponentConfig(helper))
             .escape()
             .awaitClient(
@@ -193,7 +185,6 @@ public final class ClientSimulatorTests {
                 assertField(c, "nh_gui.sim.comp_settings.threshold", "222");
                 assertField(c, "nh_gui.sim.comp_settings.pause", "13");
             })
-            .capture("component-settings-reopened")
             .awaitServer("serialized settings preserve both components", () -> assertComponentConfig(helper))
             .succeed();
     }

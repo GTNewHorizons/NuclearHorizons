@@ -44,7 +44,6 @@ public final class ClientFluidReactorTests {
 
     @GameTest(template = "fluid_reactor", timeoutTicks = 700)
     public static void coolantAndNhOnlyComponentsWorkInFluidReactor(GameTestHelper helper) {
-        long[] renderStart = { -1 };
         ClientTest.scenario(helper)
             .defaultTimeoutTicks(100)
             .server("build the fluid reactor and six chambers", () -> buildReactor(helper))
@@ -87,17 +86,8 @@ public final class ClientFluidReactorTests {
                     || hit.blockZ != hatch.z())
                     throw new AssertionError("Access hatch is not under the crosshair: " + hit);
             })
-            .withinTicks(100)
-            .awaitServer("allow the client chunk mesh to update", () -> {
-                long now = helper.getWorld()
-                    .getTotalWorldTime();
-                if (renderStart[0] < 0) renderStart[0] = now;
-                if (now - renderStart[0] < 60) throw new AssertionError("Waiting for the chunk renderer");
-            })
-            .capture("fluid-reactor-structure")
             .useHeldItem()
             .awaitClient("fluid reactor GUI opens", c -> c.screen(GuiContainerWrapper.class))
-            .capture("fluid-reactor-components-and-coolant")
             .succeed();
     }
 

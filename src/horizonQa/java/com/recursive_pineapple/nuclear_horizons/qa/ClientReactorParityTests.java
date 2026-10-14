@@ -93,7 +93,6 @@ public final class ClientReactorParityTests {
                 c -> {
                     if (c.screen() == null) throw new AssertionError("Right-click did not open the NH reactor GUI");
                 })
-            .capture("powered-nh-reactor-beside-ic2")
             .succeed();
     }
 

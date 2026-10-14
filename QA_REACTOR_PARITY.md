@@ -30,7 +30,7 @@ The layout occupies 23 of the 24 zero-based slots in the 4×6 grid.
 | (2,5) | NH LZH condensator | IC2 lap condensator |
 | (3,5) | GT thorium rod | Same GT thorium rod |
 
-Both reactors start with 200 hull heat. Matched coolant cells, heat vents, and heat exchangers start with 80 heat where the component can store it. This gives the lower cooling network a real state to process. The scenario waits until the uranium rods have completed the same three or more active cycles. It compares EU per tick, hull heat, maximum hull heat, fuel wear, lithium charge, reflector wear, and every cooling component's observable heat or wear. The component heat vent has no internal wear, so its effect is checked through the adjacent 60k coolant cell. Fuel, lithium, reflector, coolant, vent, exchanger, and condensator families must change state. Plating must increase hull capacity. It then uses normal client input to open the NH reactor GUI and captures a screenshot.
+Both reactors start with 200 hull heat. Matched coolant cells, heat vents, and heat exchangers start with 80 heat where the component can store it. This gives the lower cooling network a real state to process. The scenario waits until the uranium rods have completed the same three or more active cycles. It compares EU per tick, hull heat, maximum hull heat, fuel wear, lithium charge, reflector wear, and every cooling component's observable heat or wear. The component heat vent has no internal wear, so its effect is checked through the adjacent 60k coolant cell. Fuel, lithium, reflector, coolant, vent, exchanger, and condensator families must change state. Plating must increase hull capacity. It then uses normal client input to open the NH reactor GUI.
 
 The source and fixture live under `src/horizonQa`. Pass `-PhorizonQaJar=<path to the PR #259 dev JAR>` to compile and include them in a `runClient` launch. Without that property, the source set and its test-only dependencies are absent from the normal build. The scenario is not packaged in the mod JAR.
 
@@ -45,4 +45,4 @@ From a Horizon-QA PR #259 checkout, build its `*-dev.jar` for the checked-out co
     --timeout-seconds 600
 ```
 
-The launcher creates a new scratch world and report directory under the NH `build/client-tests` directory. Check `launch-result.json`, `horizonqa-result.json`, `TEST-horizonqa.xml`, and the captured PNG there. An infrastructure failure may leave no Horizon-QA result files, in which case `launch.log` records where Minecraft stopped.
+The launcher creates a new scratch world and report directory under the NH `build/client-tests` directory. Check `launch-result.json`, `horizonqa-result.json`, and `TEST-horizonqa.xml` there. An infrastructure failure may leave no Horizon-QA result files, in which case `launch.log` records where Minecraft stopped.

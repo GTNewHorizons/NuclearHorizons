@@ -76,8 +76,8 @@ public final class ClientReactorGalleryTests {
                 () -> { for (int pair = 0; pair < PAIRS; pair++) compare(helper, pair); });
 
         for (int pair = 0; pair < PAIRS; pair++) {
-            captureGui(scenario, helper, pair, false);
-            captureGui(scenario, helper, pair, true);
+            openGui(scenario, helper, pair, false);
+            openGui(scenario, helper, pair, true);
         }
         scenario.succeed();
     }
@@ -144,7 +144,7 @@ public final class ClientReactorGalleryTests {
         assertLayout(helper, pair, true);
     }
 
-    private static void captureGui(ClientScenario scenario, GameTestHelper helper, int pair, boolean ic2Side) {
+    private static void openGui(ClientScenario scenario, GameTestHelper helper, int pair, boolean ic2Side) {
         String side = ic2Side ? "IC2" : "NH";
         scenario.server("face active " + side + " " + NAMES[pair], () -> face(helper, pair, ic2Side))
             .withinTicks(100)
@@ -153,7 +153,6 @@ public final class ClientReactorGalleryTests {
                 c -> assertCrosshair(helper, pair, ic2Side, c))
             .useHeldItem()
             .awaitClient("active " + side + " GUI opens", c -> assertGui(c, ic2Side))
-            .capture("gallery-" + NAMES[pair] + "-" + side.toLowerCase() + "-active")
             .escape();
     }
 
