@@ -130,6 +130,25 @@ public class ForeignItems {
         }
 
         @Override
+        public int getUsedHeatCapacity(@Nonnull ItemStack itemStack) {
+            return getStoredHeat(itemStack);
+        }
+
+        @Override
+        public void setUsedHeatCapacity(@Nonnull ItemStack itemStack, int usedHeatCapacity) {
+            if (usedHeatCapacity < 0 || usedHeatCapacity > getMaxHeat(itemStack)) {
+                throw new IllegalArgumentException(
+                    "Initial heat is outside the component's capacity: " + usedHeatCapacity);
+            }
+            setStoredHeat(itemStack, usedHeatCapacity);
+        }
+
+        @Override
+        public boolean canVentHeat(@Nonnull ItemStack itemStack) {
+            return true;
+        }
+
+        @Override
         public int getStoredHeat(@Nonnull ItemStack itemStack) {
             try {
                 return (int) GET_HEAT_OF_STACK.invoke(itemStack);
@@ -196,7 +215,7 @@ public class ForeignItems {
 
         @Override
         public double getMoxEUCoefficient(@Nonnull ItemStack itemStack) {
-            return 1.5;
+            return item.sHeatBonus;
         }
 
         @Override
@@ -206,7 +225,7 @@ public class ForeignItems {
 
         @Override
         public double getHeatMult(@Nonnull ItemStack itemStack) {
-            return item.sHeat * 4;
+            return item.sHeat;
         }
 
         @Override

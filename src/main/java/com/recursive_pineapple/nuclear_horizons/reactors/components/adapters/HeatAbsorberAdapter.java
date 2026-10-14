@@ -38,7 +38,9 @@ public class HeatAbsorberAdapter implements IComponentAdapter {
 
     @Override
     public boolean containsHeat() {
-        return this.heatContainer.getMaxHeat(itemStack) > 0;
+        int maxHeat = this.heatContainer.getMaxHeat(itemStack);
+        return maxHeat > 0
+            && (this.heatContainer.isConsumable(itemStack) || this.heatContainer.getRemainingHealth(itemStack) > 0);
     }
 
     @Override
@@ -47,10 +49,31 @@ public class HeatAbsorberAdapter implements IComponentAdapter {
     }
 
     @Override
+    public int getUsedHeatCapacity() {
+        return this.heatContainer.getUsedHeatCapacity(itemStack);
+    }
+
+    @Override
+    public void setUsedHeatCapacity(int usedHeatCapacity) {
+        this.heatContainer.setUsedHeatCapacity(itemStack, usedHeatCapacity);
+    }
+
+    @Override
+    public boolean canVentHeat() {
+        return this.heatContainer.canVentHeat(itemStack);
+    }
+
+    @Override
+    public int getMaxHeat() {
+        return this.heatContainer.getMaxHeat(itemStack);
+    }
+
+    @Override
     public int addHeat(int delta) {
         int rejected = this.heatContainer.addHeat(itemStack, delta);
 
-        if (this.heatContainer.getRemainingHealth(itemStack) <= 0 && this.heatContainer.isConsumable(itemStack)) {
+        if (rejected > 0 && this.heatContainer.getRemainingHealth(itemStack) <= 0
+            && this.heatContainer.isConsumable(itemStack)) {
             this.reactor.setItem(x, y, ItemStack.copyItemStack(this.heatContainer.getProduct(itemStack)));
         }
 

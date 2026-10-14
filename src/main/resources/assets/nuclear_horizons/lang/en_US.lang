@@ -63,6 +63,7 @@ item.debugHeatAbsorber.name=Creative Heat Absorber
 item.reactorPlatingHeatDebug.name=Creative Reactor Plating
 item.thoriumBreederRod.name=Thorium Breeding Rod
 item.thoriumBreederRodFinished.name=Thorium Breeding Rod (Finished)
+item.lithiumBreederCell.name=Lithium Breeder Cell
 
 item.metaitem.0.name=Fuel Rod (Empty)
 
@@ -101,10 +102,10 @@ nh_tooltip.breeder.desc=Place next to Fuel Rods in a reactor to irradiate this b
 nh_tooltip.breeder.heat_mult=Increases breeding speed by %2$,d%% for every %1$,d reactor hull heat.
 
 nh_tooltip.rod.lifetime=Remaining lifetime: %1$,ds / %2$,ds
-nh_tooltip.mover.reactor_xfer=Transfer up to %d HU between the reactor and itself.
-nh_tooltip.exchanger.comp_xfer=Transfer up to %d HU between its neighbours and itself.
-nh_tooltip.vent.void_self=Dissipate up to %d HU from itself.
-nh_tooltip.vent.void_adj=Dissipate up to %d HU from its neighbours.
+nh_tooltip.mover.reactor_xfer=Transfer up to %d HU/s between the reactor and itself.
+nh_tooltip.exchanger.comp_xfer=Transfer up to %d HU/s per neighbour between its neighbours and itself.
+nh_tooltip.vent.void_self=Dissipate up to %d HU/s from itself.
+nh_tooltip.vent.void_adj=Dissipate up to %d HU/s per neighbour.
 nh_tooltip.vent.fluid_disclaimer=Note: In a fluid reactor, each HU vented is converted to %1$,d HU (%1$,dmB) of hot coolant.
 nh_tooltip.plating_explosion=Decreases the reactor's explosion radius by %,d %% (multiplicative).
 nh_tooltip.plating_heat=Increases the reactor's maximum temperature by %,d HU.
@@ -115,11 +116,10 @@ nh_tooltip.sim.results.avg_temp=Avg Temp: %s
 nh_tooltip.sim.results.min_temp=Min Temp: %s
 nh_tooltip.sim.results.max_temp=Max Temp: %s
 nh_tooltip.sim.results.avg_hull_cooling=Avg Hull Cooling: %s
-nh_tooltip.sim.results.avg_hull_cooling_with_max=Avg Hull Cooling: %s / %s
 nh_tooltip.sim.results.avg_hull_heating=Avg Hull Heating: %s
 nh_tooltip.sim.results.heating_per_item=HU Per Item (Hull Only): %s
-nh_tooltip.sim.results.avg_heat_output=Avg Heat Output: %s
-nh_tooltip.sim.results.avg_heat_output_with_max=Avg Heat Output: %s / %s
+nh_tooltip.sim.results.avg_heat_output=Avg Air Cooling: %s
+nh_tooltip.sim.results.ideal_heat_output=Ideal Max Air Cooling in Initial Layout: %s
 nh_tooltip.sim.results.replace_count=Replaced %d times
 nh_tooltip.sim.results.avg_power=Avg Power: %s
 nh_tooltip.sim.results.power_per_item=Power Per Item: %s
@@ -132,6 +132,9 @@ nh_gui.reactor.hu_output=HU/s: %,d
 
 nh_gui.sim.results.title=Simulation Results
 nh_gui.sim.results.no_results=No simulation results available
+nh_gui.sim.status.running=Simulation running
+nh_gui.sim.status.cancelled=Simulation cancelled
+nh_gui.sim.status.failed=Simulation failed
 nh_gui.sim.results.runtime=Simulation ran for %s
 nh_gui.sim.results.time_to_normal=Reached a normal temp. at %s
 nh_gui.sim.results.time_to_burn=Reached burn threshold at %s
@@ -183,3 +186,12 @@ nh_gui.sim.comp_settings.active=Active Component: %s
 nh_gui.sim.comp_settings.xy=X=%1$d Y=%2$d (Name=%3$s)
 
 nh.recipe.coolant=Reactor Coolant
+nh_gui.sim.settings.configuration_code=Configuration Code:
+nh_gui.sim.settings.automated=Automated Replacement:
+nh_gui.sim.settings.export_planner=Export to ERP
+nh_gui.sim.comp_settings.marker=Orange marker: heat automation enabled
+nh_gui.sim.comp_settings.empty=Select an occupied slot to edit its settings
+nh_gui.sim.comp_settings.automated=Heat Automation:
+nh_gui.sim.comp_settings.initial_heat=Initial Heat:
+nh_gui.sim.comp_settings.threshold=Heat Threshold:
+nh_gui.sim.comp_settings.pause=Pause (s):

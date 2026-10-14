@@ -12,6 +12,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
+import com.recursive_pineapple.nuclear_horizons.reactors.tile.IReactorSensor;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 import com.recursive_pineapple.nuclear_horizons.utils.DirectionUtil;
 
@@ -94,7 +95,7 @@ public class ReactorCore extends BlockContainer implements IDebugableBlock {
 
         TileReactorCore te = (TileReactorCore) worldIn.getTileEntity(x, y, z);
 
-        if (getAttachedChambers(worldIn, x, y, z) != te.getChamberCount()) {
+        if (neighbor instanceof IReactorSensor || getAttachedChambers(worldIn, x, y, z) != te.getChamberCount()) {
             ((TileReactorCore) worldIn.getTileEntity(x, y, z)).queueStructureCheck();
         }
     }

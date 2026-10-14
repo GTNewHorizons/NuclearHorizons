@@ -38,7 +38,7 @@ public class TileRedstonePort extends TileEntity implements IReactorBlock {
 
     @Override
     public ReactorEnableState getEnableState() {
-        boolean hasSignal = worldObj.getBlockPowerInput(xCoord, yCoord, zCoord) > 0;
+        boolean hasSignal = worldObj.isBlockIndirectlyGettingPowered(xCoord, yCoord, zCoord);
 
         if (inverted) {
             if (hasSignal) {

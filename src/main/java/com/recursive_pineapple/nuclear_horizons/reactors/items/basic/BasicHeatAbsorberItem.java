@@ -25,7 +25,21 @@ public class BasicHeatAbsorberItem extends ReactorItem implements IHeatContainer
 
     @Override
     public int getStoredHeat(@Nonnull ItemStack itemStack) {
-        return 0;
+        // Condensator damage is spent absorption capacity, not heat available for cooling.
+        return consumable ? IHeatContainer.super.getStoredHeat(itemStack) : 0;
+    }
+
+    @Override
+    public int getUsedHeatCapacity(@Nonnull ItemStack itemStack) {
+        return itemStack.getItemDamage();
+    }
+
+    @Override
+    public void setUsedHeatCapacity(@Nonnull ItemStack itemStack, int usedHeatCapacity) {
+        if (usedHeatCapacity < 0 || usedHeatCapacity > getMaxHeat(itemStack)) {
+            throw new IllegalArgumentException("Initial heat is outside the component's capacity: " + usedHeatCapacity);
+        }
+        itemStack.setItemDamage(usedHeatCapacity);
     }
 
     public void setProduct(ItemStack product) {

@@ -8,9 +8,10 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
+import com.recursive_pineapple.nuclear_horizons.reactors.tile.IReactorSensor;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileThermalSensor;
 
-public class ReactorThermalSensor extends BlockContainer {
+public class ReactorThermalSensor extends BlockContainer implements IReactorSensor {
 
     protected ReactorThermalSensor() {
         super(Material.piston);

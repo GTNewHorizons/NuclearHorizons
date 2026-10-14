@@ -1,6 +1,5 @@
 package com.recursive_pineapple.nuclear_horizons;
 
-import com.recursive_pineapple.nuclear_horizons.networking.PacketDispatcher;
 import com.recursive_pineapple.nuclear_horizons.reactors.blocks.BlockList;
 import com.recursive_pineapple.nuclear_horizons.reactors.items.ForeignItems;
 import com.recursive_pineapple.nuclear_horizons.reactors.items.NHItemList;
@@ -42,8 +41,6 @@ public class CommonProxy {
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes." (Remove if not needed)
     public void init(FMLInitializationEvent event) {
-        PacketDispatcher.registerPackets();
-
         NHStructureChannels.register();
 
         NHItemList.registerInit();
