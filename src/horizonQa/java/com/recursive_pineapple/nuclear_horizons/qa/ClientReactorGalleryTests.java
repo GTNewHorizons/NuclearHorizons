@@ -30,7 +30,7 @@ import ic2.api.item.ICustomDamageItem;
 import ic2.api.reactor.IReactor;
 import ic2.api.reactor.IReactorComponent;
 
-/** Compares five live reactor pairs and captures their normal GUIs. */
+/** Compares live reactor pairs and checks NH's intentional exchanger equilibrium through normal game ticks. */
 @GameTestHolder(value = "nuclear_horizons", clientOnly = true, requiredMods = { "IC2", "gregtech" })
 public final class ClientReactorGalleryTests {
 
@@ -39,10 +39,10 @@ public final class ClientReactorGalleryTests {
     private static final int REACTOR_Y = 0;
     private static final int REACTOR_Z = 4;
     private static final int PLAYER_Z = 7;
-    private static final String[] NAMES = { "uranium", "reflected-uranium", "cooling", "mox-exchanger",
+    private static final String[] NAMES = { "mox", "reflected-uranium", "cooling", "exchanger-equilibrium",
         "thorium-reactor-vent" };
-    private static final String[][] LAYOUTS = { { "....", ".U..", "...." }, { "....", ".UR.", "...." },
-        { "....", ".UCV", "...." }, { "....", ".MX.", ".CW." }, { "....", ".TH.", ".DA." } };
+    private static final String[][] LAYOUTS = { { "....", ".M..", "...." }, { "....", ".UR.", "...." },
+        { "....", ".UCV", "...." }, { "....", ".UCX", "...." }, { "....", ".TH.", ".DA." } };
 
     private ClientReactorGalleryTests() {}
 
@@ -136,12 +136,20 @@ public final class ClientReactorGalleryTests {
                     if (nhStack.getItemDamage() != usedCapacity || ic2Item.getCustomDamage(ic2Stack) != usedCapacity)
                         throw new AssertionError("Failed to preload condensators to C-2");
                 }
+                if (pair == 3 && (code == 'C' || code == 'X')) {
+                    nhStack.setItemDamage(1_000);
+                    ((ICustomDamageItem) ic2Stack.getItem()).setCustomDamage(ic2Stack, 1_000);
+                }
                 nh.setInventorySlotContents(row * COLUMNS + col, nhStack);
                 ic2.setItemAt(col, row, ic2Stack);
             }
         }
         assertLayout(helper, pair, false);
         assertLayout(helper, pair, true);
+        if (pair == 3) {
+            nh.setHullHeat(1_000);
+            ic2.setHeat(1_000);
+        }
     }
 
     private static void openGui(ClientScenario scenario, GameTestHelper helper, int pair, boolean ic2Side) {
@@ -217,7 +225,7 @@ public final class ClientReactorGalleryTests {
             || nhEU <= 0
             || ic2EU <= 0
             || Math.abs(nhEU - ic2EU) > 0.001
-            || nhHeat != ic2Heat
+            || (pair != 3 && nhHeat != ic2Heat)
             || nh.getMaxHullHeat() != ic2.getMaxHeat())
             throw new AssertionError("Reactor output or hull state differs at " + NAMES[pair]);
         for (int row = 0; row < LAYOUTS[pair].length; row++) {
@@ -232,11 +240,33 @@ public final class ClientReactorGalleryTests {
                 int ic2State = state(component, ic2Stack, true);
                 helper.recordDiagnostic(
                     NAMES[pair] + " " + component + " " + col + "," + row + ": NH=" + nhState + " IC2=" + ic2State);
-                if (nhState != ic2State) throw new AssertionError(
-                    NAMES[pair] + " component " + component + " state differs at " + col + "," + row);
+                if (!(pair == 3 && (component == 'C' || component == 'X')) && nhState != ic2State)
+                    throw new AssertionError(
+                        NAMES[pair] + " component " + component + " state differs at " + col + "," + row);
                 if (pair == 4 && component == 'D' && ic2State != 20_000)
                     throw new AssertionError("Near-full IC2 condensator did not fill to capacity: " + ic2State);
             }
+        }
+        if (pair == 3) {
+            int cycles = fuelCycles(nh.getStackInSlot(COLUMNS + 1));
+            int nhCellHeat = state('C', nh.getStackInSlot(COLUMNS + 2), false);
+            int nhExchangerHeat = state('X', nh.getStackInSlot(COLUMNS + 3), false);
+            int ic2CellHeat = state('C', ic2.getItemAt(2, 1), true);
+            int ic2ExchangerHeat = state('X', ic2.getItemAt(3, 1), true);
+            // One uranium rod adds 4 HU per cycle, with no cooling in this layout.
+            if (nhHeat + nhCellHeat + nhExchangerHeat != 3_000 + 4 * cycles
+                || ic2Heat + ic2CellHeat + ic2ExchangerHeat != 3_000 + 4 * cycles)
+                throw new AssertionError("Exchanger transfers created or lost heat");
+            // NH balances absolute heat after each transfer, rather than IC2's capacity percentages.
+            if (cycles != 3 || nhHeat != 1_003 || nhCellHeat != 1_004 || nhExchangerHeat != 1_005)
+                throw new AssertionError(
+                    "NH equilibrium after " + cycles
+                        + " cycles: hull="
+                        + nhHeat
+                        + ", cell="
+                        + nhCellHeat
+                        + ", exchanger="
+                        + nhExchangerHeat);
         }
     }
 
@@ -264,7 +294,6 @@ public final class ClientReactorGalleryTests {
             case 'C' -> NHItemList.COOLANT_CELL_10k.get(1);
             case 'V' -> NHItemList.BASIC_HEAT_VENT.get(1);
             case 'X' -> NHItemList.BASIC_HEAT_EXCHANGER.get(1);
-            case 'W' -> NHItemList.ADVANCED_HEAT_VENT.get(1);
             case 'H' -> NHItemList.REACTOR_HEAT_VENT.get(1);
             case 'D' -> NHItemList.RSH_CONDENSATOR.get(1);
             case 'A' -> NHItemList.REACTOR_PLATING.get(1);
@@ -275,7 +304,6 @@ public final class ClientReactorGalleryTests {
             case 'C' -> "reactorCoolantSimple";
             case 'V' -> "reactorVent";
             case 'X' -> "reactorHeatSwitch";
-            case 'W' -> "reactorVentDiamond";
             case 'H' -> "reactorVentCore";
             case 'D' -> "reactorCondensator";
             case 'A' -> "reactorPlating";
