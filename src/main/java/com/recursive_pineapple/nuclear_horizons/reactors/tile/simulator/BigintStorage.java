@@ -28,7 +28,7 @@ public class BigintStorage {
      */
     public void store(int value, int max) {
         if (value < 0 || value > max) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Planner value " + value + " is outside the supported range 0.." + max);
         }
         storedValue = storedValue.multiply(BigInteger.valueOf(max + 1))
             .add(BigInteger.valueOf(value));

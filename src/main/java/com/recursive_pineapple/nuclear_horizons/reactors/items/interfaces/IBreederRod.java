@@ -17,4 +17,6 @@ public interface IBreederRod {
     public int getReactorHeatDivisor(@Nonnull ItemStack itemStack);
 
     public int getHeatMultiplier(@Nonnull ItemStack itemStack);
+
+    boolean reflectsNeutrons(@Nonnull ItemStack itemStack);
 }

@@ -32,6 +32,7 @@ import static gregtech.api.enums.ItemList.Reactor_Coolant_Sp_3;
 import static gregtech.api.enums.ItemList.Reactor_Coolant_Sp_6;
 import static gregtech.api.enums.ItemList.RodExcitedPlutonium;
 import static gregtech.api.enums.ItemList.RodExcitedPlutonium2;
+import static gregtech.api.enums.ItemList.RodExcitedPlutonium4;
 import static gregtech.api.enums.ItemList.RodExcitedUranium;
 import static gregtech.api.enums.ItemList.RodExcitedUranium2;
 import static gregtech.api.enums.ItemList.RodExcitedUranium4;
@@ -42,6 +43,10 @@ import static gregtech.api.enums.ItemList.RodHighDensityPlutonium4;
 import static gregtech.api.enums.ItemList.RodHighDensityUranium;
 import static gregtech.api.enums.ItemList.RodHighDensityUranium2;
 import static gregtech.api.enums.ItemList.RodHighDensityUranium4;
+import static gregtech.api.enums.ItemList.RodLithium;
+import static gregtech.api.enums.ItemList.RodMOX;
+import static gregtech.api.enums.ItemList.RodMOX2;
+import static gregtech.api.enums.ItemList.RodMOX4;
 import static gregtech.api.enums.ItemList.RodNaquadah;
 import static gregtech.api.enums.ItemList.RodNaquadah2;
 import static gregtech.api.enums.ItemList.RodNaquadah32;
@@ -88,7 +93,7 @@ public class SimulationItems {
     }
 
     public static @Nullable ItemStack getSimulationItem(int id) {
-        return reactorItemsById.get(id);
+        return ItemStack.copyItemStack(reactorItemsById.get(id));
     }
 
     public static @Nullable Integer getSimulationItemId(ItemStack item) {
@@ -156,5 +161,20 @@ public class SimulationItems {
         registerSimulationItem(70, RodExcitedPlutonium2);
         registerSimulationItem(71, RodExcitedPlutonium);
         registerSimulationItem(72, RodGlowstone);
+        // Keep 71 readable for old NH protobuf configurations. New single rods use 69.
+        reactorItemIdsByItem.put(RodExcitedPlutonium.get(1), 69);
+        registerSimulationItem(73, RodExcitedPlutonium4);
+        registerSimulationItem(74, NHItemList.COOLANT_HEAT_EXCHANGER_1);
+        registerSimulationItem(75, NHItemList.COOLANT_HEAT_EXCHANGER_2);
+        registerSimulationItem(76, NHItemList.COOLANT_HEAT_EXCHANGER_3);
+        registerSimulationItem(77, NHItemList.REACTOR_PLATING_HEAT_2);
+        registerSimulationItem(78, NHItemList.THORIUM_BREEDER_ROD);
+        registerSimulationItem(79, NHItemList.DEBUG_HEAT_ABSORBER);
+        registerSimulationItem(80, NHItemList.REACTOR_PLATING_HEAT_DEBUG);
+        registerSimulationItem(81, RodLithium);
+        registerSimulationItem(82, RodMOX);
+        registerSimulationItem(83, RodMOX2);
+        registerSimulationItem(84, RodMOX4);
+        registerSimulationItem(85, NHItemList.LITHIUM_BREEDER_CELL);
     }
 }

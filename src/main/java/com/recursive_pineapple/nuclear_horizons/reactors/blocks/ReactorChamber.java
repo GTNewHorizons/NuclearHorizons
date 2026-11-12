@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -16,6 +15,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
+import com.recursive_pineapple.nuclear_horizons.reactors.tile.IReactorSensor;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorChamber;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 import com.recursive_pineapple.nuclear_horizons.utils.DirectionUtil;
@@ -64,6 +64,12 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
     @Override
     public void onNeighborBlockChange(World worldIn, int x, int y, int z, Block neighbor) {
         onBlocksChanged(worldIn, x, y, z);
+        if (!worldIn.isRemote && neighbor instanceof IReactorSensor
+            && worldIn.getTileEntity(x, y, z) instanceof TileReactorChamber chamber
+            && chamber.getReactor() != null) {
+            chamber.getReactor()
+                .queueStructureCheck();
+        }
     }
 
     @Override
@@ -72,14 +78,13 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
     }
 
     private void onBlocksChanged(World worldIn, int x, int y, int z) {
+        if (worldIn.isRemote) return;
+
         if (getAttachedReactors(worldIn, x, y, z) != 1) {
+            int metadata = worldIn.getBlockMetadata(x, y, z);
             worldIn.setBlock(x, y, z, Blocks.air);
             worldIn.spawnEntityInWorld(new EntityItem(worldIn, x + 0.5, y + 0.5, z + 0.5, new ItemStack(this, 1)));
-
-            var worldclient = Minecraft.getMinecraft().theWorld;
-
-            worldclient
-                .playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (worldclient.getBlockMetadata(x, y, z) << 12));
+            worldIn.playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (metadata << 12));
         } else {
             ((TileReactorChamber) worldIn.getTileEntity(x, y, z)).setReactor(null);
 

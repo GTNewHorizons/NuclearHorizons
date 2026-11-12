@@ -10,11 +10,8 @@ public class SimulationComponentResult {
         totalTempSecs,
         totalEUOutput;
         
-    public Long
-        maxAirHeating,
-        maxAirHeatingCapacity,
-        maxHullCooling,
-        maxHullCoolingCapacity;
+    /** Ideal air cooling in HU/s for the initial layout, null for components that do not dissipate heat. */
+    public Long maxAirHeatingCapacity;
 
     public int
         minTemp = Integer.MAX_VALUE,
@@ -22,6 +19,8 @@ public class SimulationComponentResult {
         replaceCount;
 
     public CustomResult[] customResults;
+
+    double fractionalEUOutput;
 
     // spotless:on
 

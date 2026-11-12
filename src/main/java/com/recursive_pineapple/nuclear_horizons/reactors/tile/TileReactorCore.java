@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -101,10 +102,11 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     int voltage = 0;
     int maxStoredEU = 4_194_304; // 2 ^ 22
-    int storedEU = 0;
-    int addedEU = 0;
+    double storedEU = 0;
+    double addedEU = 0;
 
     private Integer hullHeatCache = null;
+    private int heatTickHullCapacity = -1;
 
     Coolant coolantCache;
     FluidTank coolantTank = new FluidTank(10_000);
@@ -130,7 +132,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         final int cols = getColumnCount();
 
         IntSyncValue storedHeatSync = new IntSyncValue(() -> this.storedHeat);
-        IntSyncValue addedEUSync = new IntSyncValue(() -> this.addedEU);
+        IntSyncValue addedEUSync = new IntSyncValue(() -> (int) this.addedEU);
         IntSyncValue addedHeatSync = new IntSyncValue(() -> this.addedHeat);
         BooleanSyncValue isFluidSync = new BooleanSyncValue(() -> this.isFluid);
         syncManager.syncValue("storedHeat", storedHeatSync);
@@ -265,7 +267,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         compound.setInteger("heat", this.storedHeat);
         compound.setInteger("roundedHeat", this.roundedHeat);
-        compound.setInteger("storedEU", this.storedEU);
+        compound.setDouble("storedEU", this.storedEU);
         compound.setInteger("tickCooldown", this.tickCounter);
         compound.setBoolean("isActive", this.isActive);
 
@@ -296,7 +298,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
             case 1 -> {
                 this.storedHeat = compound.getInteger("heat");
                 this.roundedHeat = compound.getInteger("roundedHeat");
-                this.storedEU = compound.getInteger("storedEU");
+                this.storedEU = compound.getDouble("storedEU");
                 this.tickCounter = compound.getInteger("tickCooldown");
                 this.isActive = compound.getBoolean("isActive");
 
@@ -413,11 +415,14 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     private boolean getEnableSignal(int x, int y, int z) {
         for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-            Block block = worldObj.getBlock(x + dir.offsetX, y + dir.offsetY, z + dir.offsetZ);
+            int neighbourX = x + dir.offsetX;
+            int neighbourY = y + dir.offsetY;
+            int neighbourZ = z + dir.offsetZ;
+            Block block = worldObj.getBlock(neighbourX, neighbourY, neighbourZ);
 
             if (block instanceof IReactorSensor) continue;
 
-            if (worldObj.getIndirectPowerLevelTo(x, y, z, dir.ordinal()) > 0) return true;
+            if (worldObj.getIndirectPowerLevelTo(neighbourX, neighbourY, neighbourZ, dir.ordinal()) > 0) return true;
         }
 
         return false;
@@ -445,12 +450,12 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         data.setInteger("chambers", chambers.size());
         data.setBoolean("isActive", isActive);
-        data.setInteger("storedEU", storedEU);
+        data.setDouble("storedEU", storedEU);
         data.setInteger("storedHeat", storedHeat);
         data.setDouble("heatRatio", heatRatio);
         data.setInteger("roundedHeat", roundedHeat);
         data.setInteger("addedHeat", addedHeat);
-        data.setInteger("addedEU", addedEU);
+        data.setDouble("addedEU", addedEU);
         data.setBoolean("isFluid", isFluid);
         data.setTag("coolantTank", coolantTank.writeToNBT(new NBTTagCompound()));
         data.setTag("hotCoolantTank", hotCoolantTank.writeToNBT(new NBTTagCompound()));
@@ -464,12 +469,12 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
         this.chamberCount = data.getInteger("chambers");
         this.isActive = data.getBoolean("isActive");
-        this.storedEU = data.getInteger("storedEU");
+        this.storedEU = data.getDouble("storedEU");
         this.storedHeat = data.getInteger("storedHeat");
         this.heatRatio = data.getDouble("heatRatio");
         this.roundedHeat = data.getInteger("roundedHeat");
         this.addedHeat = data.getInteger("addedHeat");
-        this.addedEU = data.getInteger("addedEU");
+        this.addedEU = data.getDouble("addedEU");
         this.isFluid = data.getBoolean("isFluid");
         this.coolantTank.readFromNBT(data.getCompoundTag("coolantTank"));
         this.hotCoolantTank.readFromNBT(data.getCompoundTag("hotCoolantTank"));
@@ -507,7 +512,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     private void emitEnergy() {
         if (this.voltage == 0) this.voltage = 32;
 
-        int availableAmps = this.storedEU / this.voltage;
+        int availableAmps = (int) (this.storedEU / this.voltage);
 
         if (availableAmps > 0) {
             int consumedAmps = emitEnergyToNetwork(this.voltage, availableAmps, this);
@@ -700,13 +705,19 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         // components change
         resetHullHeatCache();
 
-        for (int row = 0; row < ROW_COUNT; row++) {
-            for (int col = 0; col < COL_COUNT; col++) {
-                var component = getComponent(col, row);
-                if (component != null) {
-                    component.onHeatTick();
+        heatTickHullCapacity = Config.REACTOR_BASE_HEAT;
+        try {
+            for (int row = 0; row < ROW_COUNT; row++) {
+                for (int col = 0; col < COL_COUNT; col++) {
+                    var component = getComponent(col, row);
+                    if (component != null) {
+                        heatTickHullCapacity += component.getReactorMaxHeatIncrease();
+                        component.onHeatTick();
+                    }
                 }
             }
+        } finally {
+            heatTickHullCapacity = -1;
         }
 
         for (var reactorBlock : reactorBlocks) {
@@ -742,7 +753,7 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         }
 
         if (this.addedEU > 0) {
-            int perTick = this.addedEU / 20;
+            int perTick = (int) (this.addedEU / 20);
 
             int voltageTier = GTUtility.getTier(perTick);
 
@@ -775,7 +786,6 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                 var block = worldObj.getBlock(x, y, z);
 
                 if (block.isFlammable(worldObj, x, y, z, ForgeDirection.UNKNOWN)) {
-                    block.breakBlock(worldObj, x, y, z, block, worldObj.getBlockMetadata(x, y, z));
                     worldObj.setBlock(x, y, z, Blocks.fire, 0, 3);
                     break;
                 }
@@ -791,8 +801,9 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
                 var block = worldObj.getBlock(x, y, z);
 
-                if (block instanceof IFluidBlock fluidBlock && fluidBlock.getFluid()
-                    .getTemperature() < 375) {
+                if (block.getMaterial() == Material.water
+                    || block instanceof IFluidBlock fluidBlock && fluidBlock.getFluid()
+                        .getTemperature() < 375) {
                     worldObj.setBlock(x, y, z, Blocks.air, 0, 3);
                     // fire hiss
                     worldObj.playAuxSFX(1004, x, y, z, 0);
@@ -895,8 +906,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         } else {
             info.add(String.format("Stored Hot Coolant: §eEmpty§r"));
         }
-        info.add(String.format("§rStored Energy: §a%,d§r EU / §e%,d§r EU", storedEU, maxStoredEU));
-        info.add(String.format("§rEnergy Generation Rate: §e%,d§r EU/t", addedEU / 20));
+        info.add(String.format("§rStored Energy: §a%,d§r EU / §e%,d§r EU", (int) storedEU, maxStoredEU));
+        info.add(String.format("§rEnergy Generation Rate: §e%,d§r EU/t", (int) (addedEU / 20)));
         info.add(
             String.format("§rMax Out: §c%,d EU/t (%s)§r at §c1§r A", voltage, GTValues.VN[GTUtility.getTier(voltage)]));
 
@@ -990,11 +1001,15 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public int getMaxHullHeat() {
+        if (heatTickHullCapacity >= 0) {
+            return heatTickHullCapacity;
+        }
+
         if (hullHeatCache != null) {
             return hullHeatCache;
         }
 
-        int maxHeat = 5000;
+        int maxHeat = Config.REACTOR_BASE_HEAT;
 
         for (int row = 0; row < ROW_COUNT; row++) {
             for (int col = 0; col < COL_COUNT; col++) {
@@ -1037,52 +1052,47 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     @Override
     public int addAirHeat(int airHeat) {
-        if (this.isFluid) {
-            if (this.coolantTank.getFluidAmount() == 0) {
-                return airHeat;
+        if (!this.isFluid) {
+            return 0;
+        }
+
+        if (this.coolantTank.getFluidAmount() == 0) {
+            coolantCache = null;
+        } else if (coolantCache == null || coolantCache.cold.getFluid() != this.coolantTank.getFluid()
+            .getFluid()) {
+                coolantCache = CoolantRegistry.getCoolantInfo(
+                    this.coolantTank.getFluid()
+                        .getFluid());
             }
 
-            // cache this because it will be called several times a second
-            if ((coolantCache == null || coolantCache.cold.getFluid() != this.coolantTank.getFluid()
-                .getFluid())) {
-                if (this.coolantTank.getFluidAmount() == 0) {
-                    coolantCache = null;
-                } else {
-                    coolantCache = CoolantRegistry.getCoolantInfo(
-                        this.coolantTank.getFluid()
-                            .getFluid());
-                }
-            }
+        if (coolantCache == null) {
+            addHullHeat(airHeat + roundedHeat / Config.FLUID_NUKE_HU_MULTIPLIER);
+            roundedHeat = 0;
+            return 0;
+        }
 
-            if (coolantCache == null) {
-                return airHeat;
-            }
+        hotCoolantTank.setCapacity(coolantCache.outputTankMult * 10_000);
 
-            this.roundedHeat += airHeat * Config.FLUID_NUKE_HU_MULTIPLIER;
+        int availableInputs = coolantTank.getFluidAmount() / coolantCache.cold.amount;
+        int availableOutputs = Math
+            .max(0, hotCoolantTank.fill(new FluidStack(coolantCache.hot, hotCoolantTank.getCapacity()), false))
+            / coolantCache.hot.amount;
+        int possibleConversions = Math.min(availableInputs, availableOutputs);
 
-            hotCoolantTank.setCapacity(this.coolantCache.outputTankMult * 10_000);
+        roundedHeat += airHeat * Config.FLUID_NUKE_HU_MULTIPLIER;
+        int conversions = Math.min(roundedHeat / coolantCache.specificHeatCapacity, possibleConversions);
+        int convertedHU = conversions * coolantCache.specificHeatCapacity;
+        roundedHeat -= convertedHU;
+        addedHeat += convertedHU;
 
-            int availableInputs = coolantTank.getFluidAmount() / this.coolantCache.cold.amount;
-            int availableOutputs = (hotCoolantTank.getCapacity() - hotCoolantTank.getFluidAmount())
-                / this.coolantCache.hot.amount;
+        if (conversions > 0) {
+            coolantTank.drain(conversions * coolantCache.cold.amount, true);
+            hotCoolantTank.fill(new FluidStack(coolantCache.hot, conversions * coolantCache.hot.amount), true);
+        }
 
-            int possibleConversions = Math.min(availableInputs, availableOutputs);
-
-            int possibleHU = possibleConversions * this.coolantCache.specificHeatCapacity;
-
-            int convertedHU = Math.min(
-                roundedHeat / this.coolantCache.specificHeatCapacity * this.coolantCache.specificHeatCapacity,
-                possibleHU);
-
-            this.roundedHeat -= convertedHU;
-            this.addedHeat += convertedHU;
-
-            int conversions = convertedHU / this.coolantCache.specificHeatCapacity;
-            int depletedCoolant = conversions * coolantCache.cold.amount;
-            int heatedCoolant = conversions * coolantCache.hot.amount;
-
-            this.coolantTank.drain(depletedCoolant, true);
-            this.hotCoolantTank.fill(new FluidStack(coolantCache.hot, heatedCoolant), true);
+        if (conversions == possibleConversions) {
+            addHullHeat(roundedHeat / Config.FLUID_NUKE_HU_MULTIPLIER);
+            roundedHeat = 0;
         }
 
         return 0;
@@ -1091,8 +1101,8 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
     @Override
     public void addEU(double eu) {
         if (!isFluid) {
-            this.storedEU += (int) (eu * Config.REACTOR_EU_MULTIPLIER);
-            this.addedEU += (int) (eu * Config.REACTOR_EU_MULTIPLIER);
+            this.storedEU += eu * Config.REACTOR_EU_MULTIPLIER;
+            this.addedEU += eu * Config.REACTOR_EU_MULTIPLIER;
         }
     }
 
@@ -1237,8 +1247,29 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
         STRUCTURE_DEFINITION
             .check(this, "eu", worldObj, ExtendedFacing.DEFAULT, xCoord, yCoord, zCoord, 1, 1, 1, false);
 
+        bindAdjacentThermalSensors(this);
+        for (TileReactorChamber chamber : chambers) {
+            bindAdjacentThermalSensors(chamber);
+        }
+
         dropExtraItems();
         worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+    }
+
+    private void bindAdjacentThermalSensors(TileEntity reactorPart) {
+        for (var direction : DirectionUtil.values()) {
+            if (direction.getTileEntity(
+                worldObj,
+                reactorPart.xCoord,
+                reactorPart.yCoord,
+                reactorPart.zCoord) instanceof TileThermalSensor sensor) {
+                TileReactorCore owner = sensor.getReactor();
+                if ((owner == null || owner == this) && !reactorBlocks.contains(sensor)) {
+                    reactorBlocks.add(sensor);
+                    sensor.setReactor(this);
+                }
+            }
+        }
     }
 
     @Override

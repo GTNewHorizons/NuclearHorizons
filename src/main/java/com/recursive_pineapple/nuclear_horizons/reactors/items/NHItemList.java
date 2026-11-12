@@ -40,11 +40,11 @@ public enum NHItemList {
     RSH_CONDENSATOR(new BasicHeatAbsorberItem("rshCondensator", "reactorCondensator", 20_000, false)),
     LZH_CONDENSATOR(new BasicHeatAbsorberItem("lzhCondensator", "reactorCondensatorLap", 100_000, false)),
 
-    NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("neutronReflector", "reactorReflector", 30_000)),
-    THICK_NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("thickNeutronReflector", "reactorReflectorThick", 120_000)),
+    NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("neutronReflector", "reactorReflector", 10_000)),
+    THICK_NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("thickNeutronReflector", "reactorReflectorThick", 40_000)),
 
     REACTOR_PLATING(new BasicReactorPlatingItem("reactorPlating", "reactorPlating", 0.95, 1000)),
-    REACTOR_PLATING_HEAT(new BasicReactorPlatingItem("reactorPlatingHeat", "reactorPlatingHeat", 0.99, 1700)),
+    REACTOR_PLATING_HEAT(new BasicReactorPlatingItem("reactorPlatingHeat", "reactorPlatingHeat", 0.99, 2000)),
     REACTOR_PLATING_HEAT_2(new BasicReactorPlatingItem("reactorPlatingHeat2", "reactorPlatingHeat2", 0.95, 6800)),
     REACTOR_PLATING_EXPLOSIVE(
         new BasicReactorPlatingItem("reactorPlatingExplosive", "reactorPlatingExplosive", 0.9, 500)),
@@ -56,8 +56,11 @@ public enum NHItemList {
     THORIUM_BREEDER_ROD_FINISHED(
         new BasicFuelRodProductItem("thoriumBreederRodFinished", "reactorThoriumSingleDepleted")),
 
-    THORIUM_BREEDER_ROD(new BasicBreederRodItem("thoriumBreederRod", "reactorThoriumSingle", 1_000, 1, 5_000)
+    THORIUM_BREEDER_ROD(new BasicBreederRodItem("thoriumBreederRod", "reactorThoriumSingle", 1_000, 1, 5_000, false)
         .setProduct(() -> THORIUM_BREEDER_ROD_FINISHED.get(1))),
+
+    LITHIUM_BREEDER_CELL(new BasicBreederRodItem("lithiumBreederCell", "reactorLithiumCell", 3_000, 1, 10_000, true)
+        .setProduct(() -> gregtech.api.enums.ItemList.DepletedRodLithium.get(1))),
 
     ITEMS(new MetaItem()),
 
