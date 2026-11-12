@@ -70,6 +70,11 @@ public class ForeignBreederRodItem implements IBreederRod, IComponentAdapterFact
         return heatMultiplier;
     }
 
+    @Override
+    public boolean reflectsNeutrons(@Nonnull ItemStack itemStack) {
+        return false;
+    }
+
     public void setProduct(@Nullable ItemStack product) {
         this.product = product;
     }

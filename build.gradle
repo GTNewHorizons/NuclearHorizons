@@ -3,3 +3,26 @@
 plugins {
     id 'com.gtnewhorizons.gtnhconvention'
 }
+
+// Opt-in source set for live Horizon-QA scenarios. These classes and dependencies stay out of the mod JAR.
+def horizonQaJarPath = providers.gradleProperty('horizonQaJar').orNull
+if (horizonQaJarPath != null) {
+    sourceSets {
+        horizonQa {
+            compileClasspath += sourceSets.main.output + tasks.named('compileJava').get().classpath
+        }
+    }
+    configurations.horizonQaAnnotationProcessor.extendsFrom(configurations.annotationProcessor)
+
+    dependencies {
+        horizonQaImplementation files(horizonQaJarPath)
+        horizonQaImplementation 'net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev'
+        runtimeOnlyNonPublishable files(horizonQaJarPath)
+        runtimeOnlyNonPublishable 'net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev'
+    }
+
+    tasks.named('runClient') {
+        dependsOn tasks.named('horizonQaClasses')
+        classpath += sourceSets.horizonQa.output
+    }
+}

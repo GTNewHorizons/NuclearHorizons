@@ -38,6 +38,17 @@ public class BreederRodAdapter implements IComponentAdapter {
     }
 
     @Override
+    public boolean reflectsNeutrons() {
+        return breederRod.reflectsNeutrons(itemStack)
+            && breederRod.getStoredNeutrons(itemStack) < breederRod.getMaxNeutrons(itemStack);
+    }
+
+    @Override
+    public boolean reflectsNeutronsForEnergy() {
+        return false;
+    }
+
+    @Override
     public void onHeatTick() {
         if (!reactor.isActive()) {
             return;

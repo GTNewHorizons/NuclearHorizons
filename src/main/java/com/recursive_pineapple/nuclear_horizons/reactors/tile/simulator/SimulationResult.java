@@ -3,13 +3,7 @@ package com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.annotation.Nullable;
-
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.recursive_pineapple.nuclear_horizons.NuclearHorizons;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
-
-import io.netty.buffer.ByteBuf;
 
 public class SimulationResult {
 
@@ -47,34 +41,6 @@ public class SimulationResult {
 
     // spotless:on
 
-    public static @Nullable SimulationResult read(ByteBuf buffer) {
-        byte[] data = new byte[buffer.readInt()];
-
-        if (data.length == 0) {
-            return null;
-        }
-
-        buffer.readBytes(data);
-
-        try {
-            return SimulationResult.load(SimulatorProtos.SimulationResult.parseFrom(data));
-        } catch (InvalidProtocolBufferException e) {
-            NuclearHorizons.LOG.error("Could not read data for SimulationResult", e);
-            return null;
-        }
-    }
-
-    public static void write(ByteBuf buffer, SimulationResult result) {
-        if (result == null) {
-            buffer.writeInt(0);
-        } else {
-            var data = result.save()
-                .toByteArray();
-            buffer.writeInt(data.length);
-            buffer.writeBytes(data);
-        }
-    }
-
     public SimulatorProtos.SimulationResult save() {
         var builder = SimulatorProtos.SimulationResult.newBuilder()
             .setStart(start)
@@ -101,7 +67,7 @@ public class SimulationResult {
                         if (c == null) {
                             return null;
                         } else {
-                            return SimulatorProtos.ComponentResult.newBuilder()
+                            var componentBuilder = SimulatorProtos.ComponentResult.newBuilder()
                                 .setIndex(i)
                                 .setTotalAirHeating(c.totalAirHeating)
                                 .setTotalHullHeating(c.totalHullHeating)
@@ -110,8 +76,11 @@ public class SimulationResult {
                                 .setTotalEUOutput(c.totalEUOutput)
                                 .setMinTemp(c.minTemp)
                                 .setMaxTemp(c.maxTemp)
-                                .setReplaceCount(c.replaceCount)
-                                .build();
+                                .setReplaceCount(c.replaceCount);
+                            if (c.maxAirHeatingCapacity != null) {
+                                componentBuilder.setMaxAirHeatingCapacity(c.maxAirHeatingCapacity);
+                            }
+                            return componentBuilder.build();
                         }
                     })
                     .filter(i -> i != null)
@@ -160,6 +129,7 @@ public class SimulationResult {
             comp.minTemp = c.getMinTemp();
             comp.maxTemp = c.getMaxTemp();
             comp.replaceCount = c.getReplaceCount();
+            if (c.hasMaxAirHeatingCapacity()) comp.maxAirHeatingCapacity = c.getMaxAirHeatingCapacity();
 
             result.componentResults[c.getIndex()] = comp;
         }

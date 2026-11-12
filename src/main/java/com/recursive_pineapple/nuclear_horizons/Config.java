@@ -6,6 +6,8 @@ import net.minecraftforge.common.config.Configuration;
 
 public class Config {
 
+    public static final int REACTOR_BASE_HEAT = 10_000;
+
     public static double ROD_EU_MULTIPLIER = 1;
     public static double ROD_HU_MULTIPLIER = 1;
     public static double MOX_EU_COEFFICIENT = 4;
