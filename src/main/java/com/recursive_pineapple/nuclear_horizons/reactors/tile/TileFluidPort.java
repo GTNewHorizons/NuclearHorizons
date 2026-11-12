@@ -2,6 +2,9 @@ package com.recursive_pineapple.nuclear_horizons.reactors.tile;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
@@ -15,9 +18,10 @@ import net.minecraftforge.fluids.IFluidHandler;
 
 import com.recursive_pineapple.nuclear_horizons.reactors.fluids.CoolantRegistry;
 
-public class TileFluidPort extends TileEntity implements IFluidHandler, IReactorBlock {
+public class TileFluidPort extends TileEntity implements IFluidHandler, IReactorBlock, IInventory {
 
     public int reactorRelX, reactorRelY, reactorRelZ;
+    private ItemStack recoverySlot;
 
     @Override
     public @Nullable TileReactorCore getReactor() {
@@ -70,6 +74,10 @@ public class TileFluidPort extends TileEntity implements IFluidHandler, IReactor
         compound.setInteger("reactorRelX", this.reactorRelX);
         compound.setInteger("reactorRelY", this.reactorRelY);
         compound.setInteger("reactorRelZ", this.reactorRelZ);
+
+        if (this.recoverySlot != null) {
+            compound.setTag("recoverySlot", this.recoverySlot.writeToNBT(new NBTTagCompound()));
+        }
     }
 
     @Override
@@ -81,6 +89,12 @@ public class TileFluidPort extends TileEntity implements IFluidHandler, IReactor
                 this.reactorRelX = compound.getInteger("reactorRelX");
                 this.reactorRelY = compound.getInteger("reactorRelY");
                 this.reactorRelZ = compound.getInteger("reactorRelZ");
+
+                if (compound.hasKey("recoverySlot", 10)) {
+                    this.recoverySlot = ItemStack.loadItemStackFromNBT(compound.getCompoundTag("recoverySlot"));
+                } else {
+                    this.recoverySlot = null;
+                }
                 break;
             }
         }
@@ -163,5 +177,91 @@ public class TileFluidPort extends TileEntity implements IFluidHandler, IReactor
         }
 
         return new FluidTankInfo[] { reactor.coolantTank.getInfo(), reactor.hotCoolantTank.getInfo() };
+    }
+
+    public ItemStack dropRecoverySlot() {
+        ItemStack item = this.recoverySlot;
+        this.recoverySlot = null;
+        return item;
+    }
+
+    @Override
+    public int getSizeInventory() {
+        return 1;
+    }
+
+    @Override
+    public ItemStack getStackInSlot(int index) {
+        return index == 0 ? this.recoverySlot : null;
+    }
+
+    @Override
+    public ItemStack decrStackSize(int index, int count) {
+        if (index != 0 || this.recoverySlot == null) return null;
+
+        this.markDirty();
+
+        int consumed = Math.min(this.recoverySlot.stackSize, count);
+        ItemStack out = this.recoverySlot.splitStack(consumed);
+
+        if (this.recoverySlot.stackSize <= 0) {
+            this.recoverySlot = null;
+        }
+
+        return out;
+    }
+
+    @Override
+    public ItemStack getStackInSlotOnClosing(int index) {
+        if (index != 0) return null;
+
+        ItemStack item = this.recoverySlot;
+        this.recoverySlot = null;
+        this.markDirty();
+        return item;
+    }
+
+    @Override
+    public void setInventorySlotContents(int index, ItemStack stack) {
+        if (index != 0) return;
+
+        this.recoverySlot = stack;
+
+        if (stack != null && stack.stackSize > this.getInventoryStackLimit()) {
+            stack.stackSize = this.getInventoryStackLimit();
+        }
+
+        this.markDirty();
+    }
+
+    @Override
+    public String getInventoryName() {
+        return "reactor_fluid_port";
+    }
+
+    @Override
+    public boolean hasCustomInventoryName() {
+        return false;
+    }
+
+    @Override
+    public int getInventoryStackLimit() {
+        return 64;
+    }
+
+    @Override
+    public boolean isUseableByPlayer(EntityPlayer player) {
+        return player.getDistanceSq(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5) <= 64;
+    }
+
+    @Override
+    public void openInventory() {}
+
+    @Override
+    public void closeInventory() {}
+
+    @Override
+    public boolean isItemValidForSlot(int index, ItemStack stack) {
+        return false;
     }
 }

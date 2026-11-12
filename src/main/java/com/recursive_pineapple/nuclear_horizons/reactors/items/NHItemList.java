@@ -44,7 +44,7 @@ public enum NHItemList {
     THICK_NEUTRON_REFLECTOR(new BasicNeutronReflectorItem("thickNeutronReflector", "reactorReflectorThick", 120_000)),
 
     REACTOR_PLATING(new BasicReactorPlatingItem("reactorPlating", "reactorPlating", 0.95, 1000)),
-    REACTOR_PLATING_HEAT(new BasicReactorPlatingItem("reactorPlatingHeat", "reactorPlatingHeat", 0.99, 1700)),
+    REACTOR_PLATING_HEAT(new BasicReactorPlatingItem("reactorPlatingHeat", "reactorPlatingHeat", 0.99, 2000)),
     REACTOR_PLATING_HEAT_2(new BasicReactorPlatingItem("reactorPlatingHeat2", "reactorPlatingHeat2", 0.95, 6800)),
     REACTOR_PLATING_EXPLOSIVE(
         new BasicReactorPlatingItem("reactorPlatingExplosive", "reactorPlatingExplosive", 0.9, 500)),

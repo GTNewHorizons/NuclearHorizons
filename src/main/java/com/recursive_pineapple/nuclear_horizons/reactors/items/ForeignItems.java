@@ -33,6 +33,7 @@ import gregtech.api.items.ItemBreederCell;
 import gregtech.api.items.ItemCoolantCell;
 import gregtech.api.items.ItemCoolantCellIC;
 import gregtech.api.items.ItemRadioactiveCellIC;
+import gregtech.common.items.ItemDepletedCell;
 
 public class ForeignItems {
 
@@ -49,6 +50,10 @@ public class ForeignItems {
 
             if (item instanceof ItemBreederCell breederCell) {
                 ComponentRegistry.registerAdapter(breederCell, new GTBreederCellAdapter(breederCell));
+                continue;
+            }
+
+            if (item instanceof ItemDepletedCell) {
                 continue;
             }
 
@@ -119,6 +124,11 @@ public class ForeignItems {
             setStoredHeat(itemStack, getStoredHeat(itemStack) + consumed);
 
             return heat - consumed;
+        }
+
+        @Override
+        public int getRemainingHealth(@Nonnull ItemStack itemStack) {
+            return this.maxHeat - getStoredHeat(itemStack);
         }
 
         public void setStoredHeat(@Nonnull ItemStack itemStack, int heat) {
@@ -196,7 +206,7 @@ public class ForeignItems {
 
         @Override
         public double getMoxEUCoefficient(@Nonnull ItemStack itemStack) {
-            return 1.5;
+            return item.sHeatBonus;
         }
 
         @Override
@@ -206,7 +216,7 @@ public class ForeignItems {
 
         @Override
         public double getHeatMult(@Nonnull ItemStack itemStack) {
-            return item.sHeat * 4;
+            return item.sHeat;
         }
 
         @Override
