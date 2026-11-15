@@ -388,7 +388,6 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
             }
         }
 
-        this.tickCounter = 0;
         this.startupDelay = REACTOR_TICK_SPEED - 1;
         this.checkStructureImmediately = true;
     }
