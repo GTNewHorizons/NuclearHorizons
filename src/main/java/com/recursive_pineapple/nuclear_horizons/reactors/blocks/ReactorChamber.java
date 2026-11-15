@@ -15,6 +15,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
+import com.recursive_pineapple.nuclear_horizons.reactors.tile.IReactorSensor;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorChamber;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.TileReactorCore;
 import com.recursive_pineapple.nuclear_horizons.utils.DirectionUtil;
@@ -63,6 +64,12 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
     @Override
     public void onNeighborBlockChange(World worldIn, int x, int y, int z, Block neighbor) {
         onBlocksChanged(worldIn, x, y, z);
+        if (!worldIn.isRemote && neighbor instanceof IReactorSensor
+            && worldIn.getTileEntity(x, y, z) instanceof TileReactorChamber chamber
+            && chamber.getReactor() != null) {
+            chamber.getReactor()
+                .queueStructureCheck();
+        }
     }
 
     @Override
@@ -74,9 +81,10 @@ public class ReactorChamber extends BlockContainer implements IDebugableBlock {
         if (worldIn.isRemote) return;
 
         if (getAttachedReactors(worldIn, x, y, z) != 1) {
-            worldIn.playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (worldIn.getBlockMetadata(x, y, z) << 12));
+            int metadata = worldIn.getBlockMetadata(x, y, z);
             worldIn.setBlock(x, y, z, Blocks.air);
             worldIn.spawnEntityInWorld(new EntityItem(worldIn, x + 0.5, y + 0.5, z + 0.5, new ItemStack(this, 1)));
+            worldIn.playAuxSFX(2001, x, y, z, Block.getIdFromBlock(this) + (metadata << 12));
         } else {
             ((TileReactorChamber) worldIn.getTileEntity(x, y, z)).setReactor(null);
 

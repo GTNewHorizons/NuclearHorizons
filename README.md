@@ -10,8 +10,5 @@ If you find an issue and would like to report it, you can either open an issue h
 # TODO
 - UI Polishing
 - New textures
-- Make vents state their total cooling capacity in sim results
 - Test on MP
-- Component automation configuration in the simulator
 - A decent looking TESR thermal sensor for EU reactors (or hook into nuclear control somehow)
-- Recipes

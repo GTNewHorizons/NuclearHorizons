@@ -6,7 +6,6 @@ import com.recursive_pineapple.nuclear_horizons.reactors.components.IComponentAd
 import com.recursive_pineapple.nuclear_horizons.reactors.components.IReactorGrid;
 import com.recursive_pineapple.nuclear_horizons.reactors.components.InventoryDirection;
 import com.recursive_pineapple.nuclear_horizons.reactors.items.interfaces.IHeatMover;
-import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationComponentResult;
 import com.recursive_pineapple.nuclear_horizons.reactors.tile.simulator.SimulationResult;
 
 public class HeatMoverAdapter implements IComponentAdapter {
@@ -15,8 +14,6 @@ public class HeatMoverAdapter implements IComponentAdapter {
     protected final int x, y;
     protected final ItemStack itemStack;
     protected final IHeatMover heatMover;
-
-    protected SimulationComponentResult simResult;
 
     public HeatMoverAdapter(IReactorGrid reactor, int x, int y, ItemStack itemStack, IHeatMover heatMover) {
         this.reactor = reactor;
@@ -52,10 +49,15 @@ public class HeatMoverAdapter implements IComponentAdapter {
     }
 
     @Override
+    public int getMaxHeat() {
+        return this.heatMover.getMaxHeat(itemStack);
+    }
+
+    @Override
     public int addHeat(int delta) {
         int rejected = this.heatMover.addHeat(itemStack, delta);
 
-        if (this.heatMover.getRemainingHealth(itemStack) <= 0) {
+        if (rejected > 0 && this.heatMover.getRemainingHealth(itemStack) <= 0) {
             this.reactor.setItem(this.x, this.y, null);
         }
 
@@ -63,8 +65,25 @@ public class HeatMoverAdapter implements IComponentAdapter {
     }
 
     @Override
-    public void onSimulationFinished(SimulationResult result, int componentIndex) {
+    public void onSimulationStarted(SimulationResult result, int componentIndex) {
+        int ventableNeighbours = 0;
+        for (var direction : InventoryDirection.values()) {
+            int neighbourX = direction.offsetX(x);
+            int neighbourY = direction.offsetY(y);
+            if (neighbourX < 0 || neighbourY < 0
+                || neighbourX >= reactor.getWidth()
+                || neighbourY >= reactor.getHeight()) {
+                continue;
+            }
 
+            var neighbour = reactor.getComponent(neighbourX, neighbourY);
+            if (neighbour != null && neighbour.canVentHeat()) {
+                ventableNeighbours++;
+            }
+        }
+
+        result.componentResults[componentIndex].maxAirHeatingCapacity = heatMover
+            .getMaxAirCooling(itemStack, reactor, ventableNeighbours);
     }
 
     protected int getTransferFromReactor() {
@@ -88,8 +107,12 @@ public class HeatMoverAdapter implements IComponentAdapter {
         int fromReactor = getTransferFromReactor();
 
         if (fromReactor != 0) {
-            this.reactor.addHullHeat(-fromReactor);
-            this.addHeat(fromReactor);
+            int rejected = this.addHeat(fromReactor);
+            this.reactor.addHullHeat(-fromReactor + rejected);
+
+            if (this.reactor.getItem(x, y) != itemStack) {
+                return;
+            }
         }
 
         int toAir = getTransferToAir();
@@ -127,9 +150,12 @@ public class HeatMoverAdapter implements IComponentAdapter {
 
                 int fromNeighbour = getTransferFromNeighbour(neighbour);
 
-                if (fromNeighbour != 0) {
-                    neighbour.addHeat(-fromNeighbour);
-                    this.addHeat(fromNeighbour);
+                if (fromNeighbour > 0) {
+                    int rejected = this.addHeat(fromNeighbour);
+                    neighbour.addHeat(-fromNeighbour + rejected);
+                } else if (fromNeighbour < 0) {
+                    int rejected = neighbour.addHeat(-fromNeighbour);
+                    this.addHeat(fromNeighbour + rejected);
                 }
             }
         }

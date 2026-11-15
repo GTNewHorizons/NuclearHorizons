@@ -52,6 +52,12 @@ public class BasicHeatVentItem extends ReactorItem implements IHeatMover {
     }
 
     @Override
+    public Long getMaxAirCooling(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor, int ventableNeighbours) {
+        long cooling = maxHeatToAir + (long) ventableNeighbours * maxNeighbourToAir;
+        return reactor.isFluid() ? cooling * Config.FLUID_NUKE_HU_MULTIPLIER : cooling;
+    }
+
+    @Override
     public @Nonnull IComponentAdapter getAdapter(@Nonnull ItemStack itemStack, @Nonnull IReactorGrid reactor, int x,
         int y) {
         return new HeatMoverAdapter(reactor, x, y, itemStack, this);

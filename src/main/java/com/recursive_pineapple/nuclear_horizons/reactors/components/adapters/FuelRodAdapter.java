@@ -12,6 +12,9 @@ import com.recursive_pineapple.nuclear_horizons.reactors.items.interfaces.IBasic
 
 public class FuelRodAdapter implements IComponentAdapter {
 
+    private static final InventoryDirection[] HEAT_SINK_ORDER = { InventoryDirection.Left, InventoryDirection.Right,
+        InventoryDirection.Up, InventoryDirection.Down, };
+
     private final IReactorGrid reactor;
     private final int x, y;
     private final ItemStack itemStack;
@@ -53,7 +56,7 @@ public class FuelRodAdapter implements IComponentAdapter {
     protected double getHeatMultiplier() {
         double mult = Config.ROD_HU_MULTIPLIER;
 
-        if (fuelRod.isMox(itemStack) && reactor.isFluid() && reactor.getHeatRatio() >= 0.5) {
+        if (fuelRod.isMox(itemStack) && reactor.isFluid() && reactor.getHeatRatio() > 0.5) {
             mult *= fuelRod.getMoxHeatCoefficient(itemStack);
         }
 
@@ -71,7 +74,7 @@ public class FuelRodAdapter implements IComponentAdapter {
             return;
         }
 
-        int pulses = this.getPulseCount();
+        int pulses = this.getPulseCount(false);
         int heat = (int) (fuelRod.getHeatMult(itemStack) * fuelRod.getRodCount(itemStack)
             * getHeatMultiplier()
             * pulses
@@ -111,11 +114,15 @@ public class FuelRodAdapter implements IComponentAdapter {
             return;
         }
 
-        int pulses = this.getPulseCount();
+        int pulses = this.getPulseCount(true);
         double energy = fuelRod.getEnergyMult(itemStack) * fuelRod.getRodCount(itemStack) * getEUMultiplier() * pulses;
 
         reactor.addEU(energy);
         fuelRod.applyDamage(itemStack, 1);
+
+        if (fuelRod.getRemainingHealth(itemStack) <= 0) {
+            reactor.setItem(x, y, ItemStack.copyItemStack(fuelRod.getProduct(itemStack)));
+        }
     }
 
     @Override
@@ -128,7 +135,7 @@ public class FuelRodAdapter implements IComponentAdapter {
         return this.fuelRod.getRodCount(itemStack);
     }
 
-    private int getPulseCount() {
+    private int getPulseCount(boolean forEnergy) {
         int pulses = 1 + this.getFuelRodCount() / 2;
 
         for (var dir : InventoryDirection.values()) {
@@ -141,7 +148,8 @@ public class FuelRodAdapter implements IComponentAdapter {
 
             var neighbour = reactor.getComponent(x2, y2);
 
-            if (neighbour != null && neighbour.reflectsNeutrons()) {
+            if (neighbour != null
+                && (forEnergy ? neighbour.reflectsNeutronsForEnergy() : neighbour.reflectsNeutrons())) {
                 pulses++;
             }
         }
@@ -152,7 +160,7 @@ public class FuelRodAdapter implements IComponentAdapter {
     private ArrayList<IComponentAdapter> getHeatableNeighbours() {
         ArrayList<IComponentAdapter> neighbours = new ArrayList<>();
 
-        for (var dir : InventoryDirection.values()) {
+        for (var dir : HEAT_SINK_ORDER) {
             int x2 = dir.offsetX(x);
             int y2 = dir.offsetY(y);
 

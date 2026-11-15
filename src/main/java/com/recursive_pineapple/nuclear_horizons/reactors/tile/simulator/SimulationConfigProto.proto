@@ -23,6 +23,7 @@ message ComponentConfig {
   int32 initialHeat = 4;
   int32 replacementThreshold = 5;
   int32 reactorPause = 6;
+  bytes stackNbt = 7;
 }
 
 message SimulationResult {
@@ -61,6 +62,7 @@ message ComponentResult {
   int32 maxTemp = 7;
   int32 replaceCount = 8;
   int64 totalEUOutput = 9;
+  optional int64 maxAirHeatingCapacity = 10;
 }
 
 message CustomResult {

@@ -13,6 +13,23 @@ public interface IHeatContainer {
         return itemStack.getItemDamage();
     }
 
+    /** Capacity already used, including heat that cannot be transferred to a vent. */
+    public default int getUsedHeatCapacity(@Nonnull ItemStack itemStack) {
+        return getStoredHeat(itemStack);
+    }
+
+    /** Set the capacity used by a simulator input, independently of heat transfer. */
+    public default void setUsedHeatCapacity(@Nonnull ItemStack itemStack, int usedHeatCapacity) {
+        int rejected = addHeat(itemStack, usedHeatCapacity - getUsedHeatCapacity(itemStack));
+        if (rejected != 0) {
+            throw new IllegalArgumentException("Initial heat is outside the component's capacity: " + usedHeatCapacity);
+        }
+    }
+
+    public default boolean canVentHeat(@Nonnull ItemStack itemStack) {
+        return isConsumable(itemStack);
+    }
+
     public default int getRemainingHealth(@Nonnull ItemStack itemStack) {
         if (!itemStack.isItemStackDamageable()) {
             return 1;

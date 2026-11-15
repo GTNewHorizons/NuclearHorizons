@@ -90,8 +90,17 @@ public class TileThermalSensor extends TileEntity implements IGuiHolder<PosGuiDa
 
     @Override
     public void onHeatTick(IReactorGrid reactor) {
-        var shouldBeActive = op.test(threshold, reactor.getHullHeat());
+        setActive(op.test(threshold, reactor.getHullHeat()));
+    }
 
+    @Override
+    public void updateEntity() {
+        if (!worldObj.isRemote && isActive() && getReactor() == null) {
+            setActive(false);
+        }
+    }
+
+    private void setActive(boolean shouldBeActive) {
         if (wasActive == null || shouldBeActive != wasActive) {
             wasActive = shouldBeActive;
             worldObj.notifyBlocksOfNeighborChange(xCoord, yCoord, zCoord, getBlockType());
@@ -125,7 +134,6 @@ public class TileThermalSensor extends TileEntity implements IGuiHolder<PosGuiDa
         compound.setInteger("reactorRelZ", this.reactorRelZ);
 
         compound.setInteger("threshold", this.threshold);
-        compound.setInteger("reactorRelZ", this.reactorRelZ);
         compound.setString("op", op.name());
     }
 

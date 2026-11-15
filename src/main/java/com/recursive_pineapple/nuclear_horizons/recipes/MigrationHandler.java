@@ -81,7 +81,8 @@ public class MigrationHandler {
         replace("IC2:reactorPlatingHeat", NHItemList.REACTOR_PLATING_HEAT.getItem());
         replace("IC2:reactorPlatingExplosive", NHItemList.REACTOR_PLATING_EXPLOSIVE.getItem());
 
-        replace("IC2:reactorLithiumCell", ItemList.RodLithium.getItem());
+        migrateAdvDmgTo("IC2:reactorLithiumCell", "neutrons");
+        replace("IC2:reactorLithiumCell", NHItemList.LITHIUM_BREEDER_CELL.getItem());
         replace("IC2:itemTritiumCell", ItemList.DepletedRodLithium.getItem());
         replace("gregtech:gt.Thoriumcell", ItemList.RodThorium.getItem());
         replace("gregtech:gt.Double_Thoriumcell", ItemList.RodThorium2.getItem());

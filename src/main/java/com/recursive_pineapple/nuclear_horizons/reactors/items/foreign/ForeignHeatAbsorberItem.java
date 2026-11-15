@@ -50,6 +50,19 @@ public class ForeignHeatAbsorberItem implements IHeatContainer, IComponentAdapte
     }
 
     @Override
+    public int getUsedHeatCapacity(@Nonnull ItemStack itemStack) {
+        return itemStack.getItemDamage();
+    }
+
+    @Override
+    public void setUsedHeatCapacity(@Nonnull ItemStack itemStack, int usedHeatCapacity) {
+        if (usedHeatCapacity < 0 || usedHeatCapacity > getMaxHeat(itemStack)) {
+            throw new IllegalArgumentException("Initial heat is outside the component's capacity: " + usedHeatCapacity);
+        }
+        itemStack.setItemDamage(usedHeatCapacity);
+    }
+
+    @Override
     public int getRemainingHealth(@Nonnull ItemStack itemStack) {
         return this.maxHeat - itemStack.getItemDamage();
     }

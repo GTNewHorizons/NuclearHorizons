@@ -33,11 +33,13 @@ public class BasicBreederRodItem extends NHItem implements IBreederRod, ICompone
     public final int heatDivisor;
     public final int heatMultiplier;
     public final int maxNeutrons;
+    public final boolean reflectsNeutrons;
 
     @Nullable
     private ItemStackSupplier product;
 
-    public BasicBreederRodItem(String name, String textureName, int heatDivisor, int heatMultiplier, int maxNeutrons) {
+    public BasicBreederRodItem(String name, String textureName, int heatDivisor, int heatMultiplier, int maxNeutrons,
+        boolean reflectsNeutrons) {
         super(name);
         setTextureName(NuclearHorizons.MODID + ":" + textureName);
         setMaxDamage(maxNeutrons);
@@ -45,6 +47,7 @@ public class BasicBreederRodItem extends NHItem implements IBreederRod, ICompone
         this.heatDivisor = heatDivisor;
         this.heatMultiplier = heatMultiplier;
         this.maxNeutrons = maxNeutrons;
+        this.reflectsNeutrons = reflectsNeutrons;
     }
 
     @Override
@@ -64,7 +67,9 @@ public class BasicBreederRodItem extends NHItem implements IBreederRod, ICompone
             .itemOutputs(product.get())
             .setNEIDesc(
                 GTUtility.breakLines(
-                    StatCollector.translateToLocal("GT5U.nei.nuclear.breeder.heat_neutral"),
+                    StatCollector.translateToLocal(
+                        reflectsNeutrons ? "GT5U.nei.nuclear.breeder.neutron_reflecting"
+                            : "GT5U.nei.nuclear.breeder.heat_neutral"),
                     StatCollector.translateToLocalFormatted(
                         "GT5U.nei.nuclear.breeder.reactor_hull_heat",
                         heatDivisor,
@@ -130,6 +135,11 @@ public class BasicBreederRodItem extends NHItem implements IBreederRod, ICompone
     @Override
     public int getHeatMultiplier(@Nonnull ItemStack itemStack) {
         return heatMultiplier;
+    }
+
+    @Override
+    public boolean reflectsNeutrons(@Nonnull ItemStack itemStack) {
+        return reflectsNeutrons;
     }
 
     public BasicBreederRodItem setProduct(@Nullable ItemStackSupplier product) {
