@@ -43,7 +43,7 @@ public class Config {
             1.0,
             "IC2 [balance / energy / FluidReactor] outputModifier. Base HU output is 2 hU per reactor heat.")
             .getDouble(1.0);
-        FLUID_NUKE_HU_MULTIPLIER = (int) Math.round(2 * FLUID_REACTOR_OUTPUT_MODIFIER);
+        FLUID_NUKE_HU_MULTIPLIER = Math.max(1, (int) Math.round(2 * FLUID_REACTOR_OUTPUT_MODIFIER));
 
         REACTOR_EXPLOSION_POWER_LIMIT = configuration.get(
             "protection",

@@ -58,6 +58,7 @@ import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructa
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.gtnewhorizon.structurelib.structure.AutoPlaceEnvironment;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
+import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.recursive_pineapple.nuclear_horizons.Config;
@@ -1017,6 +1018,9 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
                 var block = worldObj.getBlock(x, y, z);
 
+                // IC2 never replaces tile entities
+                if (worldObj.getTileEntity(x, y, z) != null) continue;
+
                 if (block.isFlammable(worldObj, x, y, z, ForgeDirection.UNKNOWN)) {
                     worldObj.setBlock(x, y, z, Blocks.fire, 0, 3);
                     break;
@@ -1075,7 +1079,11 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
                 var block = worldObj.getBlock(x, y, z);
 
-                if (!block.isAir(worldObj, x, y, z) && block.getBlockHardness(worldObj, x, y, z) < 5) {
+                if (worldObj.getTileEntity(x, y, z) != null) continue;
+
+                float hardness = block.getBlockHardness(worldObj, x, y, z);
+
+                if (!block.isAir(worldObj, x, y, z) && hardness >= 0 && hardness < 5) {
                     worldObj.setBlock(x, y, z, Blocks.flowing_lava, 1, 3);
                     // fire hiss
                     worldObj.playAuxSFX(1004, x, y, z, 0);
@@ -1344,6 +1352,22 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
 
     private static int remainingChambers = 0;
 
+    private static IStructureElement<TileReactorCore> shellElement() {
+        return new GTStructureUtility.ProxyStructureElement<>(ofBlock(BlockList.PRESSURE_VESSEL, 0)) {
+
+            @Override
+            public boolean check(TileReactorCore reactor, World world, int x, int y, int z) {
+                if (world.getTileEntity(x, y, z) instanceof IReactorBlock reactorBlock) {
+                    reactor.reactorBlocks.add(reactorBlock);
+                    reactorBlock.setReactor(reactor);
+                    return true;
+                }
+
+                return super.check(reactor, world, x, y, z);
+            }
+        };
+    }
+
     // spotless:off
     private static final IStructureDefinition<TileReactorCore> STRUCTURE_DEFINITION = StructureDefinition
         .<TileReactorCore>builder()
@@ -1365,20 +1389,9 @@ public class TileReactorCore extends TileEntity implements IInventory, IReactorG
                     {" C ", "C~C", " C "},
                     {"   ", " C ", "   "},
                 }))
-        .addElement('A', lazy(() -> ofBlock(BlockList.PRESSURE_VESSEL, 0)))
-        .addElement('B', lazy(() -> new GTStructureUtility.ProxyStructureElement<>(ofBlock(BlockList.PRESSURE_VESSEL, 0)) {
-
-            @Override
-            public boolean check(TileReactorCore reactor, World world, int x, int y, int z) {
-                if (world.getTileEntity(x, y, z) instanceof IReactorBlock reactorBlock) {
-                    reactor.reactorBlocks.add(reactorBlock);
-                    reactorBlock.setReactor(reactor);
-                    return true;
-                }
-
-                return super.check(reactor, world, x, y, z);
-            }
-        }))
+        // Original mod accepts ports and hatches anywhere on the shell, including edges and corners.
+        .addElement('A', lazy(TileReactorCore::shellElement))
+        .addElement('B', lazy(TileReactorCore::shellElement))
         .addElement('C', lazy(() -> new GTStructureUtility.ProxyStructureElement<>(ofBlock(BlockList.REACTOR_CHAMBER, 0)) {
 
             private boolean decrement() {
