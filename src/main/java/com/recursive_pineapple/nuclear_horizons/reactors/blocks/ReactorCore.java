@@ -33,8 +33,8 @@ public class ReactorCore extends BlockContainer implements IDebugableBlock {
 
     @Override
     public void registerBlockIcons(IIconRegister reg) {
-        this.iconTop = reg.registerIcon("nuclear_horizons:reactor_chamber_side");
-        this.iconBottom = reg.registerIcon("nuclear_horizons:reactor_chamber_top");
+        this.iconTop = reg.registerIcon("nuclear_horizons:reactor_core_top");
+        this.iconBottom = reg.registerIcon("nuclear_horizons:reactor_core_bottom");
         this.iconSideInactive = reg.registerIcon("nuclear_horizons:reactor_core_side");
         this.iconSideActive = reg.registerIcon("nuclear_horizons:reactor_core_side_active");
     }
