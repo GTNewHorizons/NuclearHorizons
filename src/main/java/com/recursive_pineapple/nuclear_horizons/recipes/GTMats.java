@@ -1089,7 +1089,7 @@ public class GTMats {
     public static final MaterialWrapper SATURATEDBASTNASITERAREREARTHOXIDES = MaterialWrapper.of(() -> WerkstoffMaterialPool.SaturatedBastnasiteRarerEarthOxides);
     public static final MaterialWrapper SAMARICRAREEARTHCONCENTRATE = MaterialWrapper.of(() -> WerkstoffMaterialPool.SamaricRareEarthConcentrate);
     public static final MaterialWrapper NEODYMICRAREEARTHCONCENTRATE = MaterialWrapper.of(() -> WerkstoffMaterialPool.NeodymicRareEarthConcentrate);
-    public static final MaterialWrapper LANTHANIUMCHLORIDE = MaterialWrapper.of(() -> WerkstoffMaterialPool.LanthaniumChloride);
+    public static final MaterialWrapper LANTHANIUMCHLORIDE = MaterialWrapper.of(() -> WerkstoffMaterialPool.LanthanumChloride);
     public static final MaterialWrapper NEODYMIUMOXIDE = MaterialWrapper.of(() -> WerkstoffMaterialPool.NeodymiumOxide);
     public static final MaterialWrapper FLUORINATEDSAMARICCONCENTRATE = MaterialWrapper.of(() -> WerkstoffMaterialPool.FluorinatedSamaricConcentrate);
     public static final MaterialWrapper CALCIUMFLUORIDE = MaterialWrapper.of(() -> WerkstoffMaterialPool.CalciumFluoride);

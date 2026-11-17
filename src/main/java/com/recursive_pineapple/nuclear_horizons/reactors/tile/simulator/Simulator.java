@@ -208,7 +208,7 @@ public class Simulator implements AutoCloseable {
                 return heatTickHullCapacity;
             }
 
-            int maxHeat = Config.REACTOR_BASE_HEAT;
+            int maxHeat = Config.REACTOR_BASE_MAX_HEAT;
 
             for (int row = 0; row < ROW_COUNT; row++) {
                 for (int col = 0; col < COL_COUNT; col++) {
@@ -353,7 +353,7 @@ public class Simulator implements AutoCloseable {
 
         private void tickComponents(boolean heatPhase) {
             if (heatPhase) {
-                heatTickHullCapacity = Config.REACTOR_BASE_HEAT;
+                heatTickHullCapacity = Config.REACTOR_BASE_MAX_HEAT;
             }
             try {
                 for (int row = 0; row < ROW_COUNT; row++) {
